@@ -3,6 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { Node } from "@/types";
 import { cn } from "@/lib/utils";
 import { FilePreview } from "./FilePreview";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CanvasNodeProps {
   node: Node;
