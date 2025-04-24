@@ -1,10 +1,11 @@
-
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useCanvas } from "@/hooks/useCanvas";
 import { NodeList } from "./NodeList";
+import { CanvasControls } from "./CanvasControls";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export const InfiniteCanvas = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -16,7 +17,6 @@ export const InfiniteCanvas = () => {
   const { nodes, viewConfig, updateViewConfig } = useCanvas(code);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize position and scale from viewConfig when available
   useEffect(() => {
     if (viewConfig && !isInitialized) {
       setScale(viewConfig.zoom);
@@ -25,7 +25,6 @@ export const InfiniteCanvas = () => {
     }
   }, [viewConfig, isInitialized]);
 
-  // Debounce the updateViewConfig call to prevent excessive database updates
   const debouncedUpdateViewConfig = useCallback(
     (() => {
       let timeoutId: NodeJS.Timeout;
@@ -33,7 +32,7 @@ export const InfiniteCanvas = () => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           updateViewConfig(config);
-        }, 1000); // Only update after 1 second of inactivity
+        }, 1000);
       };
     })(),
     [updateViewConfig]
@@ -70,11 +69,9 @@ export const InfiniteCanvas = () => {
         y: e.clientY - dragStart.y,
       };
       setPosition(newPosition);
-      // Don't update the database on every mouse move - only use the debounced version
     }
   }, [isDragging, dragStart]);
 
-  // Save position when drag ends
   const handleMouseUp = useCallback(() => {
     if (isDragging) {
       debouncedUpdateViewConfig({ zoom: scale, position });
@@ -82,7 +79,42 @@ export const InfiniteCanvas = () => {
     }
   }, [isDragging, scale, position, debouncedUpdateViewConfig]);
 
-  // Show a toast when canvas loads
+  const handleAddNode = async (nodeData: any) => {
+    try {
+      const { data: node, error } = await supabase
+        .from('nodes')
+        .insert([nodeData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Node created",
+        description: `Successfully created ${nodeData.node_type} node`
+      });
+    } catch (error) {
+      console.error('Error creating node:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create node",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleZoomIn = useCallback(() => {
+    const newScale = Math.min(scale * 1.1, 5);
+    setScale(newScale);
+    debouncedUpdateViewConfig({ zoom: newScale, position });
+  }, [scale, position, debouncedUpdateViewConfig]);
+
+  const handleZoomOut = useCallback(() => {
+    const newScale = Math.max(scale * 0.9, 0.1);
+    setScale(newScale);
+    debouncedUpdateViewConfig({ zoom: newScale, position });
+  }, [scale, position, debouncedUpdateViewConfig]);
+
   useEffect(() => {
     if (nodes.length > 0) {
       toast({
@@ -105,6 +137,12 @@ export const InfiniteCanvas = () => {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
+      <CanvasControls 
+        code={code || ''} 
+        onAddNode={handleAddNode}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+      />
       <div
         style={{
           transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
