@@ -9,7 +9,7 @@ import { useState } from "react";
 
 interface CanvasControlsProps {
   code: string;
-  canvasId: string; // Add canvasId prop to pass the actual UUID
+  canvasId: string;
   onAddNode: (node: any) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -20,7 +20,7 @@ export const CanvasControls = ({ code, canvasId, onAddNode, onZoomIn, onZoomOut 
   const [isUploading, setIsUploading] = useState(false);
 
   const onDrop = async (acceptedFiles: File[]) => {
-    if (isUploading) return;
+    if (isUploading || !canvasId) return;
     
     setIsUploading(true);
     try {
@@ -34,9 +34,9 @@ export const CanvasControls = ({ code, canvasId, onAddNode, onZoomIn, onZoomOut 
 
         if (uploadError) throw uploadError;
 
-        // Create node in database with the actual canvasId
+        // Create node in database with the file reference
         const node = {
-          canvas_id: canvasId, // Use the UUID instead of the code
+          canvas_id: canvasId,
           node_type: file.type.startsWith('image/') ? 'image' : 
                      file.type.startsWith('video/') ? 'video' : 
                      file.type === 'application/pdf' ? 'pdf' : 'file',
@@ -72,14 +72,29 @@ export const CanvasControls = ({ code, canvasId, onAddNode, onZoomIn, onZoomOut 
   });
 
   const handleCreateTextNode = () => {
+    if (!canvasId) {
+      toast({
+        title: "Error",
+        description: "Canvas not available",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const node = {
-      canvas_id: canvasId, // Use the UUID instead of the code
+      canvas_id: canvasId,
       node_type: 'text',
       content: 'Double click to edit',
       position: { x: Math.random() * 300, y: Math.random() * 300 },
       dimensions: { width: 200, height: 100 }
     };
     onAddNode(node);
+  };
+
+  const handleUploadClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    open();
   };
 
   return (
@@ -96,15 +111,18 @@ export const CanvasControls = ({ code, canvasId, onAddNode, onZoomIn, onZoomOut 
         <Text className="h-4 w-4" />
       </Button>
       
-      <Button variant="outline" size="icon" {...getRootProps()} onClick={open}>
-        <input {...getInputProps()} />
+      <Button variant="outline" size="icon" onClick={handleUploadClick}>
         <Upload className="h-4 w-4" />
       </Button>
       
-      <Button variant="outline" size="icon" {...getRootProps()}>
+      <div {...getRootProps()} className="contents">
         <input {...getInputProps()} />
-        <File className="h-4 w-4" />
-      </Button>
+        {isDragActive && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center border-2 border-dashed border-primary">
+            <p className="text-lg font-medium">Drop files here</p>
+          </div>
+        )}
+      </div>
       
       <div className="h-px w-full bg-border" />
       
