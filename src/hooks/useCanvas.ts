@@ -11,22 +11,38 @@ export const useCanvas = (code?: string) => {
     queryKey: ["canvas", code],
     queryFn: async () => {
       if (!code) return null;
-      const { data: canvas } = await supabase
+      
+      // Try to get the existing canvas
+      const { data: canvas, error } = await supabase
         .from("canvases")
         .select("*")
         .eq("code", code)
         .single();
 
-      if (!canvas) {
-        const { data: newCanvas } = await supabase
-          .from("canvases")
-          .insert([{ code }])
-          .select()
-          .single();
-        return newCanvas;
+      // If canvas exists, return it
+      if (canvas) {
+        return canvas;
+      }
+      
+      // If there was a validation error rather than "not found", throw it
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching canvas:", error);
+        throw error;
       }
 
-      return canvas;
+      // Create a new canvas since it doesn't exist
+      const { data: newCanvas, error: createError } = await supabase
+        .from("canvases")
+        .insert([{ code }])
+        .select()
+        .single();
+        
+      if (createError) {
+        console.error("Error creating canvas:", createError);
+        throw createError;
+      }
+      
+      return newCanvas;
     },
     enabled: !!code,
   });

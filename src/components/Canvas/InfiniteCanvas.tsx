@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useCanvas } from "@/hooks/useCanvas";
@@ -14,7 +15,7 @@ export const InfiniteCanvas = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const { code } = useParams();
-  const { nodes, viewConfig, updateViewConfig } = useCanvas(code);
+  const { nodes, canvas, viewConfig, updateViewConfig } = useCanvas(code);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
@@ -81,13 +82,25 @@ export const InfiniteCanvas = () => {
 
   const handleAddNode = async (nodeData: any) => {
     try {
+      if (!canvas?.id) {
+        toast({
+          title: "Error",
+          description: "Canvas not found",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const { data: node, error } = await supabase
         .from('nodes')
         .insert([nodeData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating node:', error);
+        throw error;
+      }
 
       toast({
         title: "Node created",
@@ -138,7 +151,8 @@ export const InfiniteCanvas = () => {
       onMouseLeave={handleMouseUp}
     >
       <CanvasControls 
-        code={code || ''} 
+        code={code || ''}
+        canvasId={canvas?.id || ''}
         onAddNode={handleAddNode}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}

@@ -1,5 +1,5 @@
 
-import { ArrowLeft, Plus, File, Text, Moon, Sun, ZoomIn, ZoomOut } from "lucide-react";
+import { ArrowLeft, Plus, File, Text, Moon, Sun, ZoomIn, ZoomOut, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { useDropzone } from "react-dropzone";
@@ -9,12 +9,13 @@ import { useState } from "react";
 
 interface CanvasControlsProps {
   code: string;
+  canvasId: string; // Add canvasId prop to pass the actual UUID
   onAddNode: (node: any) => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
 }
 
-export const CanvasControls = ({ code, onAddNode, onZoomIn, onZoomOut }: CanvasControlsProps) => {
+export const CanvasControls = ({ code, canvasId, onAddNode, onZoomIn, onZoomOut }: CanvasControlsProps) => {
   const { theme, setTheme } = useTheme();
   const [isUploading, setIsUploading] = useState(false);
 
@@ -33,9 +34,9 @@ export const CanvasControls = ({ code, onAddNode, onZoomIn, onZoomOut }: CanvasC
 
         if (uploadError) throw uploadError;
 
-        // Create node in database
+        // Create node in database with the actual canvasId
         const node = {
-          canvas_id: code,
+          canvas_id: canvasId, // Use the UUID instead of the code
           node_type: file.type.startsWith('image/') ? 'image' : 
                      file.type.startsWith('video/') ? 'video' : 
                      file.type === 'application/pdf' ? 'pdf' : 'file',
@@ -65,14 +66,14 @@ export const CanvasControls = ({ code, onAddNode, onZoomIn, onZoomOut }: CanvasC
     }
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     noClick: true
   });
 
   const handleCreateTextNode = () => {
     const node = {
-      canvas_id: code,
+      canvas_id: canvasId, // Use the UUID instead of the code
       node_type: 'text',
       content: 'Double click to edit',
       position: { x: Math.random() * 300, y: Math.random() * 300 },
@@ -93,6 +94,11 @@ export const CanvasControls = ({ code, onAddNode, onZoomIn, onZoomOut }: CanvasC
       
       <Button variant="outline" size="icon" onClick={handleCreateTextNode}>
         <Text className="h-4 w-4" />
+      </Button>
+      
+      <Button variant="outline" size="icon" {...getRootProps()} onClick={open}>
+        <input {...getInputProps()} />
+        <Upload className="h-4 w-4" />
       </Button>
       
       <Button variant="outline" size="icon" {...getRootProps()}>
