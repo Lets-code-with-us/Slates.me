@@ -79,7 +79,29 @@ export const useCanvas = (code?: string) => {
     };
   }, [canvas?.id, queryClient]);
 
-  const viewConfig = canvas?.view_config as ViewConfig;
+  // Properly type cast the view_config from JSON to our ViewConfig type
+  let viewConfig: ViewConfig | undefined;
+  if (canvas?.view_config) {
+    const config = canvas.view_config as any;
+    // Ensure the object has the expected shape before using it
+    if (typeof config === 'object' && 
+        'zoom' in config && 
+        'position' in config && 
+        typeof config.position === 'object' &&
+        'x' in config.position && 
+        'y' in config.position) {
+      viewConfig = {
+        zoom: Number(config.zoom),
+        position: {
+          x: Number(config.position.x),
+          y: Number(config.position.y)
+        }
+      };
+    } else {
+      // Fallback to default values if structure is unexpected
+      viewConfig = { zoom: 1, position: { x: 0, y: 0 } };
+    }
+  }
 
   return {
     canvas,
