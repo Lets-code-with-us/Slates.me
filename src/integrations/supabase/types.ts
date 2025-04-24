@@ -9,7 +9,86 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      canvases: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          last_accessed_at: string
+          updated_at: string
+          view_config: Json
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          last_accessed_at?: string
+          updated_at?: string
+          view_config?: Json
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          last_accessed_at?: string
+          updated_at?: string
+          view_config?: Json
+        }
+        Relationships: []
+      }
+      nodes: {
+        Row: {
+          canvas_id: string
+          content: string | null
+          created_at: string
+          dimensions: Json
+          file_name: string | null
+          file_path: string | null
+          file_type: string | null
+          id: string
+          node_type: string
+          position: Json
+          style: Json | null
+          updated_at: string
+        }
+        Insert: {
+          canvas_id: string
+          content?: string | null
+          created_at?: string
+          dimensions?: Json
+          file_name?: string | null
+          file_path?: string | null
+          file_type?: string | null
+          id?: string
+          node_type: string
+          position?: Json
+          style?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          canvas_id?: string
+          content?: string | null
+          created_at?: string
+          dimensions?: Json
+          file_name?: string | null
+          file_path?: string | null
+          file_type?: string | null
+          id?: string
+          node_type?: string
+          position?: Json
+          style?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nodes_canvas_id_fkey"
+            columns: ["canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
