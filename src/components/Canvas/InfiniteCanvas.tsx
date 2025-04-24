@@ -1,5 +1,5 @@
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useCanvas } from "@/hooks/useCanvas";
 import { NodeList } from "./NodeList";
@@ -13,6 +13,14 @@ export const InfiniteCanvas = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const { code } = useParams();
   const { nodes, viewConfig, updateViewConfig } = useCanvas(code);
+
+  // Initialize position and scale from viewConfig when available
+  useEffect(() => {
+    if (viewConfig) {
+      setScale(viewConfig.zoom);
+      setPosition(viewConfig.position);
+    }
+  }, [viewConfig]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {

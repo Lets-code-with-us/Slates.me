@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Node, ViewConfig } from "@/types";
 
@@ -39,7 +39,7 @@ export const useCanvas = (code?: string) => {
         .from("nodes")
         .select("*")
         .eq("canvas_id", canvas.id);
-      return nodes || [];
+      return (nodes || []) as Node[];
     },
     enabled: !!canvas?.id,
   });
@@ -49,7 +49,7 @@ export const useCanvas = (code?: string) => {
       if (!canvas?.id) return;
       await supabase
         .from("canvases")
-        .update({ view_config: viewConfig })
+        .update({ view_config: viewConfig as any })
         .eq("id", canvas.id);
     },
     [canvas?.id]
@@ -68,7 +68,7 @@ export const useCanvas = (code?: string) => {
           table: "nodes",
           filter: `canvas_id=eq.${canvas.id}`,
         },
-        (payload) => {
+        () => {
           queryClient.invalidateQueries({ queryKey: ["nodes", canvas.id] });
         }
       )
@@ -79,9 +79,12 @@ export const useCanvas = (code?: string) => {
     };
   }, [canvas?.id, queryClient]);
 
+  const viewConfig = canvas?.view_config as ViewConfig;
+
   return {
     canvas,
     nodes,
+    viewConfig,
     updateViewConfig,
   };
 };
