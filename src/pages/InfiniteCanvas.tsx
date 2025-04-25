@@ -15,6 +15,17 @@ const InfiniteCanvas = () => {
     
     metaViewport?.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
     
+    // Prevent default touch actions
+    document.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', (e) => {
+      e.preventDefault();
+    }, { passive: false });
+    
     return () => {
       if (originalContent) {
         metaViewport?.setAttribute('content', originalContent);
