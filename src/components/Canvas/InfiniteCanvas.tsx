@@ -26,6 +26,25 @@ export const InfiniteCanvas = () => {
     }
   }, [viewConfig, isInitialized]);
 
+  // Prevent default zooming behavior on the whole page
+  useEffect(() => {
+    const preventDefaultZoom = (e: WheelEvent | TouchEvent) => {
+      if ((e as WheelEvent).ctrlKey || 
+          (e as TouchEvent).touches && (e as TouchEvent).touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    // Add event listeners to prevent default zoom
+    document.addEventListener('wheel', preventDefaultZoom, { passive: false });
+    document.addEventListener('touchmove', preventDefaultZoom, { passive: false });
+
+    return () => {
+      document.removeEventListener('wheel', preventDefaultZoom);
+      document.removeEventListener('touchmove', preventDefaultZoom);
+    };
+  }, []);
+
   const debouncedUpdateViewConfig = useCallback(
     (() => {
       let timeoutId: NodeJS.Timeout;
@@ -40,8 +59,9 @@ export const InfiniteCanvas = () => {
   );
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault(); // Prevent default scrolling/zooming
+    
     if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       const newScale = Math.min(Math.max(scale * delta, 0.1), 5);
       setScale(newScale);
@@ -56,6 +76,63 @@ export const InfiniteCanvas = () => {
     }
   }, [scale, position, debouncedUpdateViewConfig]);
 
+  // Handle touch events for pinch-to-zoom
+  const [initialPinchDistance, setInitialPinchDistance] = useState<number | null>(null);
+  const [initialScale, setInitialScale] = useState<number>(1);
+
+  const calculateDistance = (touches: React.TouchList) => {
+    return Math.hypot(
+      touches[0].clientX - touches[1].clientX,
+      touches[0].clientY - touches[1].clientY
+    );
+  };
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const distance = calculateDistance(e.touches);
+      setInitialPinchDistance(distance);
+      setInitialScale(scale);
+    } else if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({ 
+        x: e.touches[0].clientX - position.x, 
+        y: e.touches[0].clientY - position.y 
+      });
+    }
+  }, [position, scale]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    
+    if (e.touches.length === 2 && initialPinchDistance !== null) {
+      // Pinch-to-zoom
+      const currentDistance = calculateDistance(e.touches);
+      const pinchRatio = currentDistance / initialPinchDistance;
+      const newScale = Math.min(Math.max(initialScale * pinchRatio, 0.1), 5);
+      setScale(newScale);
+    } else if (e.touches.length === 1 && isDragging) {
+      // Pan
+      const newPosition = {
+        x: e.touches[0].clientX - dragStart.x,
+        y: e.touches[0].clientY - dragStart.y,
+      };
+      setPosition(newPosition);
+    }
+  }, [initialPinchDistance, initialScale, isDragging, dragStart]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (initialPinchDistance !== null) {
+      setInitialPinchDistance(null);
+      debouncedUpdateViewConfig({ zoom: scale, position });
+    }
+    
+    if (isDragging) {
+      setIsDragging(false);
+      debouncedUpdateViewConfig({ zoom: scale, position });
+    }
+  }, [initialPinchDistance, isDragging, scale, position, debouncedUpdateViewConfig]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
       setIsDragging(true);
@@ -65,6 +142,7 @@ export const InfiniteCanvas = () => {
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (isDragging) {
+      e.preventDefault();
       const newPosition = {
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
@@ -141,14 +219,17 @@ export const InfiniteCanvas = () => {
     <div
       ref={containerRef}
       className={cn(
-        "h-screen w-screen overflow-hidden bg-background cursor-grab",
-        isDragging && "cursor-grabbing"
+        "h-screen w-screen overflow-hidden bg-gray-100 dark:bg-gray-900",
+        isDragging ? "cursor-grabbing" : "cursor-grab"
       )}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <CanvasControls 
         code={code || ''}

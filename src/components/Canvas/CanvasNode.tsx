@@ -1,9 +1,10 @@
+
 import { useCallback, useRef, useState } from "react";
 import { Node } from "@/types";
 import { cn } from "@/lib/utils";
 import { FilePreview } from "./FilePreview";
 import { supabase } from "@/integrations/supabase/client";
-import { Trash2 } from "lucide-react";
+import { Trash2, Move } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface CanvasNodeProps {
@@ -39,6 +40,7 @@ export const CanvasNode = ({ node, scale, onUpdate }: CanvasNodeProps) => {
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (isDragging) {
       e.stopPropagation();
+      e.preventDefault();
       const newPosition = {
         x: e.clientX / scale - dragStart.x,
         y: e.clientY / scale - dragStart.y
@@ -56,6 +58,7 @@ export const CanvasNode = ({ node, scale, onUpdate }: CanvasNodeProps) => {
 
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     setIsResizing(true);
     setResizeStart({
       width: currentDimensions.width,
@@ -68,6 +71,7 @@ export const CanvasNode = ({ node, scale, onUpdate }: CanvasNodeProps) => {
   const handleResize = useCallback((e: React.MouseEvent) => {
     if (isResizing) {
       e.stopPropagation();
+      e.preventDefault();
       const deltaX = (e.clientX - resizeStart.x) / scale;
       const deltaY = (e.clientY - resizeStart.y) / scale;
       const newDimensions = {
@@ -139,63 +143,71 @@ export const CanvasNode = ({ node, scale, onUpdate }: CanvasNodeProps) => {
     <div
       ref={nodeRef}
       className={cn(
-        "absolute bg-card rounded-lg shadow-md border group overflow-hidden",
-        (isDragging || isResizing) && "cursor-grabbing"
+        "absolute bg-white rounded-lg shadow-lg border border-gray-200 group overflow-hidden",
+        (isDragging || isResizing) && "cursor-grabbing opacity-75"
       )}
       style={{
         transform: `translate(${currentPosition.x}px, ${currentPosition.y}px)`,
         width: currentDimensions.width,
         height: currentDimensions.height,
-        cursor: isDragging ? 'grabbing' : 'grab'
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={(e) => {
-        handleMouseMove(e);
-        handleResize(e);
-      }}
-      onMouseUp={() => {
-        handleMouseUp();
-        handleResizeEnd();
-      }}
-      onMouseLeave={() => {
-        handleMouseUp();
-        handleResizeEnd();
+        transition: isDragging || isResizing ? 'none' : 'box-shadow 0.2s ease'
       }}
       onDoubleClick={handleDoubleClick}
     >
-      <button
-        onClick={handleDelete}
-        className="absolute -top-2 -right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:scale-110"
+      {/* Drag handle at the top */}
+      <div 
+        className="absolute top-0 left-0 right-0 h-8 bg-gray-100 border-b border-gray-200 flex items-center px-2 cursor-grab"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
-        <Trash2 className="h-4 w-4" />
-      </button>
-
-      {node.node_type === 'text' && (
-        <div className="p-4 w-full h-full">
-          {isEditing ? (
-            <textarea
-              className="w-full h-full p-2 bg-transparent resize-none focus:outline-none text-sm text-card-foreground"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              onBlur={handleBlur}
-              autoFocus
-            />
-          ) : (
-            <div className="w-full h-full overflow-auto">
-              <p className="text-sm text-card-foreground whitespace-pre-wrap">{content}</p>
-            </div>
-          )}
+        <Move className="h-4 w-4 text-gray-500 mr-2" />
+        <div className="text-xs text-gray-500 truncate flex-1">
+          {node.file_name || node.node_type}
         </div>
-      )}
-      {(node.node_type === 'image' || node.node_type === 'video' || node.node_type === 'pdf') && (
-        <FilePreview node={node} />
-      )}
+        <button
+          onClick={handleDelete}
+          className="p-1 rounded-full hover:bg-red-100 transition-colors"
+        >
+          <Trash2 className="h-4 w-4 text-red-500" />
+        </button>
+      </div>
 
+      {/* Content area */}
+      <div className="p-2 mt-8 w-full h-[calc(100%-32px)] overflow-auto">
+        {node.node_type === 'text' && (
+          <div className="w-full h-full">
+            {isEditing ? (
+              <textarea
+                className="w-full h-full p-2 bg-transparent resize-none focus:outline-none text-sm text-gray-700"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                onBlur={handleBlur}
+                autoFocus
+              />
+            ) : (
+              <div className="w-full h-full overflow-auto">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{content}</p>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {(node.node_type === 'image' || node.node_type === 'video' || node.node_type === 'pdf') && (
+          <FilePreview node={node} />
+        )}
+      </div>
+
+      {/* Resize handle */}
       <div
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize"
         onMouseDown={handleResizeStart}
+        onMouseMove={handleResize}
+        onMouseUp={handleResizeEnd}
+        onMouseLeave={handleResizeEnd}
         style={{
-          background: 'linear-gradient(135deg, transparent 50%, rgb(var(--primary)) 50%)',
+          background: 'linear-gradient(135deg, transparent 50%, rgb(209, 213, 219) 50%)',
         }}
       />
     </div>
