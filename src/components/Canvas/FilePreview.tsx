@@ -1,7 +1,6 @@
 
 import { Node } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
-import { Move } from "lucide-react";
 
 interface FilePreviewProps {
   node: Node;
@@ -15,13 +14,12 @@ export const FilePreview = ({ node }: FilePreviewProps) => {
   switch (node.node_type) {
     case 'image':
       return (
-        <div className="w-full h-full flex items-center justify-center overflow-hidden">
+        <div className="w-full h-full flex items-center justify-center">
           <img
             src={fileUrl}
             alt={node.file_name || 'Image'}
             className="max-w-full max-h-full object-contain"
             loading="lazy"
-            style={{ imageRendering: 'auto' }}
           />
         </div>
       );
