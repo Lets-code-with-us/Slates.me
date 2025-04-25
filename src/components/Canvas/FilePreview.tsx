@@ -14,25 +14,29 @@ export const FilePreview = ({ node }: FilePreviewProps) => {
   switch (node.node_type) {
     case 'image':
       return (
-        <img
-          src={fileUrl}
-          alt={node.file_name || 'Image'}
-          className="w-full h-full object-contain rounded-lg"
-        />
+        <div className="w-full h-full flex items-center justify-center">
+          <img
+            src={fileUrl}
+            alt={node.file_name || 'Image'}
+            className="max-w-full max-h-full object-contain"
+            loading="lazy"
+          />
+        </div>
       );
     case 'video':
       return (
         <video
           src={fileUrl}
           controls
-          className="w-full h-full object-contain rounded-lg"
+          className="w-full h-full object-contain"
+          preload="metadata"
         />
       );
     case 'pdf':
       return (
         <iframe
           src={fileUrl}
-          className="w-full h-full rounded-lg"
+          className="w-full h-full"
           title={node.file_name || 'PDF Document'}
         />
       );
