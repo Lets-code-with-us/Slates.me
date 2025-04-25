@@ -4,6 +4,8 @@ import { Node } from "@/types";
 import { cn } from "@/lib/utils";
 import { FilePreview } from "./FilePreview";
 import { supabase } from "@/integrations/supabase/client";
+import { X } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface CanvasNodeProps {
   node: Node;
@@ -61,7 +63,6 @@ export const CanvasNode = ({ node, scale, onUpdate }: CanvasNodeProps) => {
   const handleBlur = () => {
     setIsEditing(false);
     if (content !== node.content) {
-      // Update content in database
       supabase
         .from('nodes')
         .update({ content })
@@ -72,11 +73,44 @@ export const CanvasNode = ({ node, scale, onUpdate }: CanvasNodeProps) => {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      // If it's a file type node, delete the file from storage first
+      if (node.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('slate_files')
+          .remove([node.file_path]);
+
+        if (storageError) throw storageError;
+      }
+
+      // Delete the node from the database
+      const { error: dbError } = await supabase
+        .from('nodes')
+        .delete()
+        .eq('id', node.id);
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Node deleted",
+        description: "Successfully removed the node from canvas"
+      });
+    } catch (error) {
+      console.error('Error deleting node:', error);
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete the node",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div
       ref={nodeRef}
       className={cn(
-        "absolute bg-card rounded-lg shadow-sm border",
+        "absolute bg-card rounded-lg shadow-md border group",
         isDragging && "cursor-grabbing"
       )}
       style={{
@@ -91,6 +125,13 @@ export const CanvasNode = ({ node, scale, onUpdate }: CanvasNodeProps) => {
       onMouseLeave={handleMouseUp}
       onDoubleClick={handleDoubleClick}
     >
+      <button
+        onClick={handleDelete}
+        className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:scale-110"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
       {node.node_type === 'text' && (
         <div className="p-4">
           {isEditing ? (
