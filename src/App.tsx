@@ -19,7 +19,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/c/:code" element={<InfiniteCanvas />} />
+          <Route path="/:code" element={<InfiniteCanvas />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
