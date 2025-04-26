@@ -6,7 +6,6 @@ import { CanvasControls } from "./CanvasControls";
 import { Minimap } from "./Minimap";
 import { NodeFinder } from "./NodeFinder";
 import { cn } from "@/lib/utils";
-import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { NodeData } from "@/types";
 import { animate } from "../../lib/animation";
@@ -18,6 +17,9 @@ export const InfiniteCanvas = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const { code } = useParams();
+  const [lastActiveTextNodeId, setLastActiveTextNodeId] = useState<string | null>(null);
+  
+  // Get canvas data and nodes
   const { nodes, canvas, viewConfig, updateViewConfig } = useCanvas(code);
   const [isInitialized, setIsInitialized] = useState(false);
   const [viewportBounds, setViewportBounds] = useState({ x: 0, y: 0, width: 0, height: 0 });
@@ -73,12 +75,26 @@ export const InfiniteCanvas = () => {
   }, [canvas, viewConfig, isInitialized]);
 
   useEffect(() => {
+    const lastNodeId = localStorage.getItem(`last-text-node-${code}`);
+    if (lastNodeId) {
+      setLastActiveTextNodeId(lastNodeId);
+    }
+  }, [code]);
+
+  useEffect(() => {
     if (nodes.length > 0 && isInitialized) {
-      if (!viewConfig && nodes.length > 0 && containerRef.current) {
+      if (lastActiveTextNodeId) {
+        const lastNode = nodes.find(n => n.id === lastActiveTextNodeId);
+        if (lastNode) {
+          handleNavigateToNode(lastNode.id);
+        } else {
+          centerViewOnContent();
+        }
+      } else if (!viewConfig) {
         centerViewOnContent();
       }
     }
-  }, [nodes, isInitialized, viewConfig]);
+  }, [nodes, isInitialized, lastActiveTextNodeId, viewConfig]);
 
   const animateToPosition = useCallback((targetPosition: {x: number, y: number}, targetScale?: number) => {
     const startPosition = {...position};
@@ -146,12 +162,6 @@ export const InfiniteCanvas = () => {
       };
 
       animateToPosition(targetPosition);
-
-      toast({
-        title: "Canvas centered",
-        description: "View has been centered on canvas content",
-        duration: 2000
-      });
     }
   }, [nodes, scale, animateToPosition]);
 
@@ -193,10 +203,30 @@ export const InfiniteCanvas = () => {
     e.preventDefault();
 
     if (e.ctrlKey || e.metaKey) {
+      // Calculate zoom factor based on wheel direction
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       const newScale = Math.min(Math.max(scale * delta, 0.1), 5);
-      setScale(newScale);
-      debouncedUpdateViewConfig({ zoom: newScale, position });
+      
+      if (containerRef.current) {
+        // Get cursor position relative to the container
+        const rect = containerRef.current.getBoundingClientRect();
+        const cursorX = e.clientX - rect.left;
+        const cursorY = e.clientY - rect.top;
+        
+        // Calculate the world position under cursor before zoom
+        const worldX = (cursorX - position.x) / scale;
+        const worldY = (cursorY - position.y) / scale;
+        
+        // Calculate new position to keep the world position under cursor
+        const newPosition = {
+          x: cursorX - worldX * newScale,
+          y: cursorY - worldY * newScale
+        };
+        
+        setScale(newScale);
+        setPosition(newPosition);
+        debouncedUpdateViewConfig({ zoom: newScale, position: newPosition });
+      }
     } else {
       const newPosition = {
         x: position.x - e.deltaX,
@@ -218,36 +248,54 @@ export const InfiniteCanvas = () => {
   };
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
+    // Only handle single touch on canvas itself
+    if (e.touches.length === 1 && e.target === e.currentTarget) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      setDragStart({ 
+        x: touch.clientX - position.x, 
+        y: touch.clientY - position.y 
+      });
+    } else if (e.touches.length === 2) {
       e.preventDefault();
       const distance = calculateDistance(e.touches);
       setInitialPinchDistance(distance);
       setInitialScale(scale);
-    } else if (e.touches.length === 1) {
-      setIsDragging(true);
-      setDragStart({ 
-        x: e.touches[0].clientX - position.x, 
-        y: e.touches[0].clientY - position.y 
-      });
     }
   }, [position, scale]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    e.preventDefault();
-
-    if (e.touches.length === 2 && initialPinchDistance !== null) {
+    if (e.touches.length === 2) {
+      e.preventDefault();
       const currentDistance = calculateDistance(e.touches);
-      const pinchRatio = currentDistance / initialPinchDistance;
+      const pinchRatio = currentDistance / (initialPinchDistance || currentDistance);
       const newScale = Math.min(Math.max(initialScale * pinchRatio, 0.1), 5);
-      setScale(newScale);
-    } else if (e.touches.length === 1 && isDragging) {
+      
+      // Calculate center point between fingers
+      const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      
+      // Calculate the world position under the center point
+      const worldX = (centerX - position.x) / scale;
+      const worldY = (centerY - position.y) / scale;
+      
+      // Calculate new position to keep the center point fixed
       const newPosition = {
-        x: e.touches[0].clientX - dragStart.x,
-        y: e.touches[0].clientY - dragStart.y,
+        x: centerX - worldX * newScale,
+        y: centerY - worldY * newScale
+      };
+      
+      setScale(newScale);
+      setPosition(newPosition);
+    } else if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0];
+      const newPosition = {
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y,
       };
       setPosition(newPosition);
     }
-  }, [initialPinchDistance, initialScale, isDragging, dragStart]);
+  }, [initialPinchDistance, initialScale, isDragging, dragStart, scale, position]);
 
   const handleTouchEnd = useCallback(() => {
     if (initialPinchDistance !== null) {
@@ -262,7 +310,8 @@ export const InfiniteCanvas = () => {
   }, [initialPinchDistance, isDragging, scale, position, debouncedUpdateViewConfig]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 0 && !e.ctrlKey && !e.metaKey) {
+    // Only handle left click and ignore clicks on nodes or controls
+    if (e.button === 0 && e.target === e.currentTarget) {
       document.body.style.userSelect = 'none';
       setIsDragging(true);
       setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
@@ -280,7 +329,7 @@ export const InfiniteCanvas = () => {
     }
   }, [isDragging, dragStart]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
     if (isDragging) {
       document.body.style.userSelect = '';
       debouncedUpdateViewConfig({ zoom: scale, position });
@@ -290,31 +339,35 @@ export const InfiniteCanvas = () => {
 
   const handleMouseLeave = useCallback(() => {
     if (isDragging) {
-      document.body.style.userSelect = '';
-      debouncedUpdateViewConfig({ zoom: scale, position });
-      setIsDragging(false);
+      // Add a global mouse up listener to handle cases where the mouse leaves the window
+      document.addEventListener('mouseup', () => {
+        document.body.style.userSelect = '';
+        debouncedUpdateViewConfig({ zoom: scale, position });
+        setIsDragging(false);
+      }, { once: true });
     }
   }, [isDragging, scale, position, debouncedUpdateViewConfig]);
 
   const handleAddNode = async (nodeData: NodeData) => {
     try {
       if (!canvas?.id) {
-        toast({
-          title: "Error",
-          description: "Canvas not found",
-          variant: "destructive"
-        });
-        return;
+        throw new Error('No active canvas');
       }
 
+      // Ensure all required fields are present
       const nodeForInsert = {
-        ...nodeData,
-        position: nodeData.position as any,
-        dimensions: nodeData.dimensions as any,
-        style: nodeData.style as any
+        canvas_id: canvas.id,
+        node_type: nodeData.node_type,
+        content: nodeData.content || null,
+        position: JSON.stringify(nodeData.position),
+        dimensions: JSON.stringify(nodeData.dimensions),
+        file_path: nodeData.file_path || null,
+        file_name: nodeData.file_name || null,
+        file_type: nodeData.file_type || null,
+        style: nodeData.style ? JSON.stringify(nodeData.style) : null
       };
 
-      const { data: node, error } = await supabase
+      const { data, error } = await supabase
         .from('nodes')
         .insert(nodeForInsert)
         .select()
@@ -324,45 +377,91 @@ export const InfiniteCanvas = () => {
         throw error;
       }
 
-      toast({
-        title: "Node created",
-        description: `Successfully created ${nodeData.node_type} node`
-      });
+      if (!data) {
+        throw new Error('No data returned after node creation');
+      }
+
+      // Navigate to the newly created node
+      const position = typeof nodeData.position === 'string' 
+        ? JSON.parse(nodeData.position) 
+        : nodeData.position;
+
+      const dimensions = typeof nodeData.dimensions === 'string'
+        ? JSON.parse(nodeData.dimensions)
+        : nodeData.dimensions;
+
+      // Calculate target position to center the node in the viewport
+      if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        const targetX = -(position.x * scale) + (width / 2) - (dimensions.width * scale / 2);
+        const targetY = -(position.y * scale) + (height / 2) - (dimensions.height * scale / 2);
+        
+        // Animate to the new node's position
+        animateToPosition({ x: targetX, y: targetY });
+      }
+
+      return data;
     } catch (error) {
       import('@/lib/error-handler').then(({ handleError }) => {
         handleError(error, {
           title: "Node Creation Failed",
-          message: `Could not create ${nodeData.node_type} node`,
-          action: "Please try again or refresh the page"
+          message: `Could not create ${nodeData.node_type} node. Please try again.`,
+          action: "Check your connection and refresh the page if the problem persists"
         });
       });
+      return null;
     }
   };
 
   const handleZoomIn = useCallback(() => {
+    if (!containerRef.current) return;
+    
     const newScale = Math.min(scale * 1.1, 5);
+    const rect = containerRef.current.getBoundingClientRect();
+    
+    // Use center of viewport as zoom point for button clicks
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // Calculate the world position under center before zoom
+    const worldX = (centerX - position.x) / scale;
+    const worldY = (centerY - position.y) / scale;
+    
+    // Calculate new position to keep the center point fixed
+    const newPosition = {
+      x: centerX - worldX * newScale,
+      y: centerY - worldY * newScale
+    };
+    
     setScale(newScale);
-    debouncedUpdateViewConfig({ zoom: newScale, position });
+    setPosition(newPosition);
+    debouncedUpdateViewConfig({ zoom: newScale, position: newPosition });
   }, [scale, position, debouncedUpdateViewConfig]);
 
   const handleZoomOut = useCallback(() => {
+    if (!containerRef.current) return;
+    
     const newScale = Math.max(scale * 0.9, 0.1);
+    const rect = containerRef.current.getBoundingClientRect();
+    
+    // Use center of viewport as zoom point for button clicks
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    // Calculate the world position under center before zoom
+    const worldX = (centerX - position.x) / scale;
+    const worldY = (centerY - position.y) / scale;
+    
+    // Calculate new position to keep the center point fixed
+    const newPosition = {
+      x: centerX - worldX * newScale,
+      y: centerY - worldY * newScale
+    };
+    
     setScale(newScale);
-    debouncedUpdateViewConfig({ zoom: newScale, position });
+    setPosition(newPosition);
+    debouncedUpdateViewConfig({ zoom: newScale, position: newPosition });
   }, [scale, position, debouncedUpdateViewConfig]);
-
-  useEffect(() => {
-    if (nodes.length > 0) {
-      // Only show a notification for a significant number of nodes
-      if (nodes.length > 5) {
-        toast({
-          title: "Canvas loaded",
-          description: `${nodes.length} elements found`,
-          duration: 2000,
-        });
-      }
-    }
-  }, [nodes.length]);
 
   const handleNavigateToPosition = useCallback((x: number, y: number) => {
     const targetPosition = {
@@ -371,12 +470,6 @@ export const InfiniteCanvas = () => {
     };
 
     animateToPosition(targetPosition);
-
-    toast({
-      title: "Navigated",
-      description: "Moved to new position on canvas",
-      duration: 2000
-    });
   }, [scale, animateToPosition]);
 
   const handleNavigateToNode = useCallback((nodeId: string) => {
@@ -401,14 +494,6 @@ export const InfiniteCanvas = () => {
     }
 
     animateToPosition({x: targetX, y: targetY});
-
-    toast({
-      title: `Navigated to ${node.node_type} node`,
-      description: node.node_type === 'text' && node.content 
-        ? `"${node.content.substring(0, 20)}${node.content.length > 20 ? '...' : ''}"` 
-        : node.file_name || '',
-      duration: 2000
-    });
   }, [nodes, scale, animateToPosition]);
 
   return (
@@ -416,9 +501,15 @@ export const InfiniteCanvas = () => {
       <div
         ref={containerRef}
         className={cn(
-          "h-screen w-screen overflow-hidden bg-gray-100 dark:bg-gray-900",
-          isDragging ? "cursor-grabbing" : "cursor-grab"
+          "fixed inset-0 overflow-hidden bg-gray-100 dark:bg-gray-900",
+          isDragging ? "cursor-grabbing" : "cursor-grab",
+          "touch-none"
         )}
+        style={{ 
+          touchAction: "none",
+          WebkitOverflowScrolling: "touch",
+          willChange: isDragging ? "transform" : "auto"
+        }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -442,7 +533,8 @@ export const InfiniteCanvas = () => {
         
         <NodeFinder 
           nodes={nodes} 
-          onNavigateToNode={handleNavigateToNode} 
+          onNavigateToNode={handleNavigateToNode}
+          className="fixed top-4 right-4 sm:right-6 z-50 max-w-[calc(100vw-6rem)] sm:max-w-md"
         />
         
         {nodes.length > 0 && (
@@ -458,7 +550,7 @@ export const InfiniteCanvas = () => {
             transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
             transformOrigin: "0 0",
           }}
-          className="absolute top-0 left-0"
+          className="absolute top-0 left-0 will-change-transform"
         >
           <NodeList 
             nodes={nodes} 

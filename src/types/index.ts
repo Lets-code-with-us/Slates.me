@@ -11,6 +11,7 @@ export interface Node {
   file_name?: string;
   created_at: string;
   updated_at: string;
+  keep_minimap_hidden?: boolean;
 }
 
 // Type for creating new nodes (subset of Node without id and timestamps)
@@ -24,6 +25,7 @@ export interface NodeData {
   file_path?: string;
   file_type?: string;
   file_name?: string;
+  keep_minimap_hidden?: boolean;
 }
 
 export interface ViewConfig {

@@ -14,13 +14,15 @@ import {
   CommandSeparator
 } from '@/components/ui/command';
 import { Toggle } from '@/components/ui/toggle';
+import { cn } from '@/lib/utils';
 
 interface NodeFinderProps {
   nodes: Node[];
   onNavigateToNode: (nodeId: string) => void;
+  className?: string;
 }
 
-export const NodeFinder = ({ nodes, onNavigateToNode }: NodeFinderProps) => {
+export const NodeFinder = ({ nodes, onNavigateToNode, className }: NodeFinderProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<{
@@ -35,6 +37,11 @@ export const NodeFinder = ({ nodes, onNavigateToNode }: NodeFinderProps) => {
     video: false,
     pdf: false,
     sortByRecent: false
+  });
+  const [searchMode, setSearchMode] = useState<'content' | 'dateRange'>('content');
+  const [dateRange, setDateRange] = useState<{start: Date | null, end: Date | null}>({
+    start: null,
+    end: null
   });
   
   // Track keyboard shortcut
@@ -56,7 +63,7 @@ export const NodeFinder = ({ nodes, onNavigateToNode }: NodeFinderProps) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open]);
   
-  // Filter and sort nodes 
+  // Enhanced filtering with date support
   const filteredNodes = useMemo(() => {
     // Start with all nodes
     let result = [...nodes];
@@ -65,9 +72,12 @@ export const NodeFinder = ({ nodes, onNavigateToNode }: NodeFinderProps) => {
     if (search.trim()) {
       const lowerSearch = search.toLowerCase();
       result = result.filter(node => {
-        // Check content for text nodes
-        if (node.content && node.content.toLowerCase().includes(lowerSearch)) {
-          return true;
+        // For text nodes, do a more thorough content search
+        if (node.node_type === 'text' && node.content) {
+          // Split search terms and check if all are present
+          const terms = lowerSearch.split(' ').filter(t => t.length > 0);
+          const content = node.content.toLowerCase();
+          return terms.every(term => content.includes(term));
         }
         
         // Check file name
@@ -84,9 +94,8 @@ export const NodeFinder = ({ nodes, onNavigateToNode }: NodeFinderProps) => {
       });
     }
     
-    // Apply type filters if any are active
+    // Apply type filters
     const hasActiveFilters = filters.text || filters.image || filters.video || filters.pdf;
-    
     if (hasActiveFilters) {
       result = result.filter(node => {
         if (filters.text && node.node_type === 'text') return true;
@@ -97,15 +106,27 @@ export const NodeFinder = ({ nodes, onNavigateToNode }: NodeFinderProps) => {
       });
     }
     
+    // Apply date range filter if active
+    if (searchMode === 'dateRange' && (dateRange.start || dateRange.end)) {
+      result = result.filter(node => {
+        const nodeDate = new Date(node.updated_at || node.created_at);
+        if (dateRange.start && nodeDate < dateRange.start) return false;
+        if (dateRange.end && nodeDate > dateRange.end) return false;
+        return true;
+      });
+    }
+
     // Apply sorting
     if (filters.sortByRecent) {
       result.sort((a, b) => {
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        const dateA = new Date(a.updated_at || a.created_at);
+        const dateB = new Date(b.updated_at || b.created_at);
+        return dateB.getTime() - dateA.getTime();
       });
     }
     
     return result;
-  }, [search, nodes, filters]);
+  }, [nodes, search, filters, searchMode, dateRange]);
 
   // Check if any filters are active
   const hasActiveFilters = filters.text || filters.image || filters.video || filters.pdf || filters.sortByRecent;
@@ -148,17 +169,18 @@ export const NodeFinder = ({ nodes, onNavigateToNode }: NodeFinderProps) => {
   // Get preview text for node
   const getNodePreview = (node: Node): string => {
     if (node.node_type === 'text' && node.content) {
-      // Truncate text content
-      return node.content.length > 50 
-        ? `${node.content.substring(0, 50)}...` 
-        : node.content;
+      // For text nodes, show first line as title and preview of content
+      const lines = node.content.split('\n');
+      const title = lines[0].trim();
+      const preview = lines.slice(1).join(' ').trim();
+      
+      if (preview) {
+        return `${title}\n${preview.length > 100 ? preview.substring(0, 100) + '...' : preview}`;
+      }
+      return title.length > 150 ? title.substring(0, 150) + '...' : title;
     }
     
-    if (node.file_name) {
-      return node.file_name;
-    }
-    
-    return `${node.node_type} node`;
+    return node.file_name || `${node.node_type} node`;
   };
   
   // Get formatted time for node
@@ -182,7 +204,7 @@ export const NodeFinder = ({ nodes, onNavigateToNode }: NodeFinderProps) => {
         variant="outline"
         size="icon"
         onClick={() => setOpen(true)}
-        className="fixed top-4 right-16 z-50"
+        className={cn("fixed top-4 right-4 sm:right-6 z-50", className)}
         title="Find nodes (Ctrl+F)"
       >
         <Search className="h-4 w-4" />

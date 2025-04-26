@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import typography from '@tailwindcss/typography';
 
 export default {
 	darkMode: ["class"],
@@ -89,8 +90,57 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+			},
+			typography: (theme: any) => ({
+				DEFAULT: {
+					css: {
+						maxWidth: 'none',
+						color: theme('colors.foreground'),
+						a: {
+							color: theme('colors.primary.DEFAULT'),
+							'&:hover': {
+								color: theme('colors.primary.DEFAULT/0.8'),
+							},
+						},
+						'h1, h2, h3, h4, h5, h6': {
+							color: theme('colors.foreground'),
+							marginTop: '1.5em',
+							marginBottom: '0.75em',
+						},
+						pre: {
+							backgroundColor: theme('colors.muted.DEFAULT'),
+							color: theme('colors.foreground'),
+						},
+						code: {
+							backgroundColor: theme('colors.muted.DEFAULT'),
+							color: theme('colors.foreground'),
+							borderRadius: theme('borderRadius.sm'),
+						},
+						blockquote: {
+							borderLeftColor: theme('colors.muted.DEFAULT'),
+							color: theme('colors.muted.foreground'),
+						},
+						hr: {
+							borderColor: theme('colors.border'),
+						},
+						'thead, tbody tr': {
+							borderBottomColor: theme('colors.border'),
+						},
+						'ol li::marker, ul li::marker': {
+							color: theme('colors.muted.foreground'),
+						}
+					},
+				},
+				invert: {
+					css: {
+						color: theme('colors.foreground'),
+					},
+				},
+			}),
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		typography,
+		require("tailwindcss-animate")
+	],
 } satisfies Config;

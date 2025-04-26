@@ -4,11 +4,16 @@ import { Node, NodeData } from "@/types";
  * Enhanced grid-based node placement strategy that prevents overlaps
  */
 
-// Grid cell size (used for placement calculation)
-const GRID_SIZE = 30; // Smaller grid for more precise placement
+// Grid cell size for more precise placement
+const GRID_SIZE = 50;
 
-// Default padding between nodes
-const NODE_PADDING = 30; // Increased padding for better separation
+// Increased padding between nodes for better readability
+const NODE_PADDING = 40;
+
+// Spiral placement configuration
+const SPIRAL_INITIAL_RADIUS = 100;
+const SPIRAL_RADIUS_INCREMENT = 60;
+const SPIRAL_ANGLE_INCREMENT = Math.PI / 6; // 30-degree increments
 
 // Default placement area
 const DEFAULT_AREA = {
@@ -53,7 +58,7 @@ const parseDimensions = (dimensions: any): { width: number; height: number } => 
 /**
  * Calculate distance between two points
  */
-export const calculateDistance = (p1: {x: number, y: number}, p2: {x: number, y: number}): number => {
+export const calculateDistance = (p1: Position, p2: Position): number => {
   return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
 };
 
@@ -114,7 +119,7 @@ export const findNodeClusters = (
 };
 
 /**
- * Check if two nodes overlap
+ * Check if two nodes overlap with padding
  */
 const checkOverlap = (
   posA: Position, 
@@ -122,18 +127,16 @@ const checkOverlap = (
   posB: Position,
   dimB: { width: number; height: number }
 ): boolean => {
-  // Add padding around nodes
   const paddedPosA = {
-    x: posA.x - NODE_PADDING / 2,
-    y: posA.y - NODE_PADDING / 2
+    x: posA.x - NODE_PADDING,
+    y: posA.y - NODE_PADDING
   };
   
   const paddedDimA = {
-    width: dimA.width + NODE_PADDING,
-    height: dimA.height + NODE_PADDING
+    width: dimA.width + (NODE_PADDING * 2),
+    height: dimA.height + (NODE_PADDING * 2)
   };
   
-  // Check for overlap with padding
   return (
     paddedPosA.x < posB.x + dimB.width &&
     paddedPosA.x + paddedDimA.width > posB.x &&
@@ -143,80 +146,89 @@ const checkOverlap = (
 };
 
 /**
- * Find an available position for a new node
+ * Find available position for a new node using an enhanced placement strategy
  */
 export const findAvailablePosition = (
   nodes: Node[], 
   dimensions: {width: number, height: number},
   viewport: {x: number, y: number, width: number, height: number} | null
-): {x: number, y: number} => {
-  // If no viewport or empty canvas, place in center
+): Position => {
+  // If no viewport or empty canvas, place in absolute center
   if (!nodes.length || !viewport) {
-    return { x: 0, y: 0 };
+    return { x: -dimensions.width / 2, y: -dimensions.height / 2 };
   }
-  
-  // Try to find a cluster with available space
-  const clusters = findNodeClusters(nodes);
-  
-  // Start with viewport center
-  const startX = viewport.x + viewport.width / 2 - dimensions.width / 2;
-  const startY = viewport.y + viewport.height / 2 - dimensions.height / 2;
-  
-  // Check for collisions with nodes
+
+  // Calculate viewport center
+  const centerX = viewport.x + (viewport.width / 2) - (dimensions.width / 2);
+  const centerY = viewport.y + (viewport.height / 2) - (dimensions.height / 2);
+
+  // Try exact center first
   const hasCollision = (x: number, y: number): boolean => {
     return nodes.some(node => {
-      const position = typeof node.position === 'string' 
+      const nodePos = typeof node.position === 'string' 
         ? JSON.parse(node.position) 
         : node.position;
-      
-      const nodeDimensions = typeof node.dimensions === 'string'
+      const nodeDim = typeof node.dimensions === 'string'
         ? JSON.parse(node.dimensions)
         : node.dimensions;
-      
-      return (
-        x < position.x + nodeDimensions.width &&
-        x + dimensions.width > position.x &&
-        y < position.y + nodeDimensions.height &&
-        y + dimensions.height > position.y
-      );
+      return checkOverlap({x, y}, dimensions, nodePos, nodeDim);
     });
   };
-  
-  // Try viewport center first
-  if (!hasCollision(startX, startY)) {
-    return { x: startX, y: startY };
+
+  // If center is available, use it
+  if (!hasCollision(centerX, centerY)) {
+    return { x: centerX, y: centerY };
   }
-  
-  // Try spiral outward from center
+
+  // Try spiral pattern from center
   let angle = 0;
-  let radius = 50;
-  const radiusIncrement = 50;
-  const angleIncrement = Math.PI / 4;
-  
-  for (let i = 0; i < 20; i++) { // Limit iterations
-    angle += angleIncrement;
-    if (angle >= 2 * Math.PI) {
-      angle = 0;
-      radius += radiusIncrement;
-    }
-    
-    const x = startX + radius * Math.cos(angle);
-    const y = startY + radius * Math.sin(angle);
-    
-    if (!hasCollision(x, y)) {
+  let radius = SPIRAL_INITIAL_RADIUS;
+  let attempts = 0;
+  const maxAttempts = 50; // Prevent infinite loops
+
+  while (attempts < maxAttempts) {
+    // Calculate position on spiral
+    const x = centerX + radius * Math.cos(angle);
+    const y = centerY + radius * Math.sin(angle);
+
+    // Check if position is within viewport bounds with padding
+    const isInViewport = (
+      x >= viewport.x + NODE_PADDING &&
+      x + dimensions.width <= viewport.x + viewport.width - NODE_PADDING &&
+      y >= viewport.y + NODE_PADDING &&
+      y + dimensions.height <= viewport.y + viewport.height - NODE_PADDING
+    );
+
+    // If position is valid and no collision, use it
+    if (isInViewport && !hasCollision(x, y)) {
       return { x, y };
     }
+
+    // Move to next spiral position
+    angle += SPIRAL_ANGLE_INCREMENT;
+    if (angle >= 2 * Math.PI) {
+      angle = 0;
+      radius += SPIRAL_RADIUS_INCREMENT;
+    }
+
+    attempts++;
   }
-  
-  // Fallback to placing relative to a cluster
-  if (clusters.length > 0) {
-    const targetCluster = clusters[0]; // Take first cluster
-    return {
-      x: targetCluster.center.x + 300,
-      y: targetCluster.center.y 
-    };
+
+  // If spiral pattern fails, try grid pattern
+  for (let row = 0; row < Math.ceil(viewport.height / GRID_SIZE); row++) {
+    for (let col = 0; col < Math.ceil(viewport.width / GRID_SIZE); col++) {
+      const x = viewport.x + (col * GRID_SIZE);
+      const y = viewport.y + (row * GRID_SIZE);
+
+      if (!hasCollision(x, y)) {
+        return { x, y };
+      }
+    }
   }
-  
-  // Ultimate fallback
-  return { x: startX + Math.random() * 300, y: startY + Math.random() * 300 };
+
+  // Ultimate fallback: place in first quadrant with offset
+  return {
+    x: viewport.x + NODE_PADDING,
+    y: viewport.y + NODE_PADDING
+  };
 };
