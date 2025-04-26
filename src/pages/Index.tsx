@@ -63,7 +63,7 @@ const Index = () => {
         <div className="text-center space-y-2">
           <div className="flex flex-col items-center gap-3">
             <img 
-              src="/images/slate_Logo.png" 
+              src="./images/slate_Logo.png" 
               alt="Slate Logo" 
               className="h-16 object-contain" 
             />
