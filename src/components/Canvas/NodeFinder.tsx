@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Node } from '@/types';
-import { Search, X, FileText, Image, FileVideo, FileSpreadsheet, File, Filter, Clock } from 'lucide-react';
+import { Search, X, FileText, Image, FileVideo, FileSpreadsheet, File, Filter, Clock, StickyNote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -154,7 +154,7 @@ export const NodeFinder = ({ nodes, onNavigateToNode, className }: NodeFinderPro
   const getNodeIcon = (nodeType: string) => {
     switch (nodeType) {
       case 'text':
-        return <FileText className="h-4 w-4 mr-2" />;
+        return <StickyNote className="h-4 w-4 mr-2" />;
       case 'image':
         return <Image className="h-4 w-4 mr-2" />;
       case 'video':
@@ -247,8 +247,8 @@ export const NodeFinder = ({ nodes, onNavigateToNode, className }: NodeFinderPro
             onClick={() => toggleFilter('text')}
             className="h-7"
           >
-            <FileText className="h-3.5 w-3.5 mr-1" />
-            Text
+            <StickyNote className="h-3.5 w-3.5 mr-1" />
+            Notes
           </Toggle>
           
           <Toggle 

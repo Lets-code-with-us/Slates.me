@@ -3,7 +3,7 @@ import { Node } from "@/types";
 import { cn } from "@/lib/utils";
 import { FilePreview } from "./FilePreview";
 import { supabase } from "@/integrations/supabase/client";
-import { Trash2, Move, Maximize2, ChevronsUpDown, Download, Code2, BookOpen } from "lucide-react";
+import { Trash2, Move, Maximize2, ChevronsUpDown, Download, Bold, Italic, Underline } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,9 +12,6 @@ import rehypeSanitize from 'rehype-sanitize';
 import { highlightCode } from '@/lib/syntax-highlighter';
 import 'highlight.js/styles/github-dark.css';
 import { Components } from 'react-markdown';
-import { codeSnippets } from '@/lib/code-snippets';
-import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Type definitions for position and dimensions (same as in NodeList)
 type Position = { x: number; y: number };
@@ -92,6 +89,15 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedContent, setLastSavedContent] = useState(node.content || '');
   const lastSaveTimeRef = useRef<number>(0);
+  const [textStyle, setTextStyle] = useState<{
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+  }>({
+    bold: false,
+    italic: false,
+    underline: false
+  });
 
   // Update last active node when editing starts
   useEffect(() => {
@@ -103,11 +109,15 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
   // Enhanced auto-save with visual feedback
   const updateContent = useCallback((newContent: string) => {
     setContent(newContent);
-    setIsSaving(true);
     
     // Clear any pending update
     if (contentUpdateTimeoutRef.current) {
       clearTimeout(contentUpdateTimeoutRef.current);
+    }
+    
+    // Only show saving indicator if content actually changed
+    if (newContent !== lastSavedContent) {
+      setIsSaving(true);
     }
     
     // Set new timeout for update
@@ -138,7 +148,7 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
       } finally {
         setIsSaving(false);
       }
-    }, 500); // Debounce time of 500ms
+    }, 750); // Increased debounce time for better performance
   }, [node.id, lastSavedContent]);
 
   // Cleanup timeout on unmount
@@ -156,6 +166,48 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
       setContent(node.content || '');
     }
   }, [node.content, isEditing]);
+
+  const applyFormatting = (style: 'bold' | 'italic' | 'underline') => {
+    const formatText = (text: string) => {
+      switch (style) {
+        case 'bold':
+          return `**${text}**`;
+        case 'italic':
+          return `_${text}_`;
+        case 'underline':
+          return `<u>${text}</u>`;
+      }
+    };
+
+    // If not editing, just wrap the entire content
+    if (!isEditing) {
+      if (!content.trim()) return; // Don't format empty content
+      const newContent = formatText(content);
+      updateContent(newContent);
+      return;
+    }
+    
+    // If editing and text is selected, format only the selection
+    const textarea = document.getElementById(`textarea-${node.id}`) as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) return; // No text selected
+
+    const selectedText = content.substring(start, end);
+    const formattedText = formatText(selectedText);
+    const newContent = content.substring(0, start) + formattedText + content.substring(end);
+    updateContent(newContent);
+
+    // Restore selection with offset for markdown syntax
+    const offset = style === 'bold' ? 2 : (style === 'italic' ? 1 : 3);
+    setTimeout(() => {
+      textarea.selectionStart = start + offset;
+      textarea.selectionEnd = end + offset;
+      textarea.focus();
+    }, 10);
+  };
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     // Don't handle mouse down for text areas or when editing
@@ -211,6 +263,30 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
     }
   }, [isResizing, isDragging, handleMouseUp]);
 
+  const handleResizeMove = useCallback((clientX: number, clientY: number) => {
+    const sensitivityFactor = 0.8;
+    const deltaX = ((clientX - resizeStart.x) / scale) * sensitivityFactor;
+    const deltaY = ((clientY - resizeStart.y) / scale) * sensitivityFactor;
+    
+    const minWidth = node.node_type === 'text' ? 150 : 100;
+    const minHeight = node.node_type === 'text' ? 100 : 100;
+    
+    const newDimensions = {
+      width: Math.max(resizeStart.width + deltaX, minWidth),
+      height: Math.max(resizeStart.height + deltaY, minHeight)
+    };
+    
+    setCurrentDimensions(newDimensions);
+    return newDimensions;
+  }, [resizeStart, scale, node.node_type]);
+
+  const handleResizeEnd = useCallback((finalDimensions: Dimensions) => {
+    document.body.style.userSelect = '';
+    setIsResizing(false);
+    setContent(resizeStart.content || content);
+    onUpdate(node.id, currentPosition, finalDimensions);
+  }, [node.id, currentPosition, resizeStart.content, content, onUpdate]);
+
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     if (e.button === 0) {  // Only start resize on left click
       e.stopPropagation();
@@ -222,39 +298,18 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
         height: currentDimensions.height,
         x: e.clientX,
         y: e.clientY,
-        content: content // Save current content state
+        content: content
       });
 
       const handleMouseMove = (e: MouseEvent) => {
         e.preventDefault();
-        const sensitivityFactor = 0.8;
-        const deltaX = ((e.clientX - resizeStart.x) / scale) * sensitivityFactor;
-        const deltaY = ((e.clientY - resizeStart.y) / scale) * sensitivityFactor;
-        
-        const newDimensions = {
-          width: Math.max(resizeStart.width + deltaX, 100),
-          height: Math.max(resizeStart.height + deltaY, 100)
-        };
-        
-        setCurrentDimensions(newDimensions);
+        handleResizeMove(e.clientX, e.clientY);
       };
 
       const handleMouseUp = (e: MouseEvent) => {
         e.preventDefault();
-        document.body.style.userSelect = '';
-        
-        // Ensure we're using the latest dimensions
-        const finalDimensions = {
-          width: Math.max(resizeStart.width + ((e.clientX - resizeStart.x) / scale) * 0.8, 100),
-          height: Math.max(resizeStart.height + ((e.clientY - resizeStart.y) / scale) * 0.8, 100)
-        };
-        
-        setCurrentDimensions(finalDimensions);
-        setIsResizing(false);
-        
-        // Update with final dimensions
-        onUpdate(node.id, currentPosition, finalDimensions);
-        
+        const finalDimensions = handleResizeMove(e.clientX, e.clientY);
+        handleResizeEnd(finalDimensions);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
       };
@@ -262,7 +317,7 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     }
-  }, [currentDimensions, scale, currentPosition, node.id, onUpdate, resizeStart.x, resizeStart.y, content]);
+  }, [currentDimensions, content, handleResizeMove, handleResizeEnd]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 1 && !(e.target as HTMLElement).closest('button') && !(e.target as HTMLElement).closest('textarea')) {
@@ -293,20 +348,14 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
 
   const handleTouchEnd = useCallback(() => {
     if (isResizing) {
-      document.body.style.userSelect = '';
-      // Calculate final dimensions based on the last touch position
       const finalDimensions = currentDimensions;
-      setCurrentDimensions(finalDimensions);
-      setIsResizing(false);
-      // Update with final dimensions
-      onUpdate(node.id, currentPosition, finalDimensions);
-    }
-    if (isDragging) {
+      handleResizeEnd(finalDimensions);
+    } else if (isDragging) {
       document.body.style.userSelect = '';
       onUpdate(node.id, currentPosition);
       setIsDragging(false);
     }
-  }, [isDragging, isResizing, currentPosition, currentDimensions, node.id, onUpdate]);
+  }, [isResizing, isDragging, currentDimensions, currentPosition, node.id, handleResizeEnd, onUpdate]);
 
   const handleTouchResizeStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 1) {
@@ -320,7 +369,7 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
         height: currentDimensions.height,
         x: touch.clientX,
         y: touch.clientY,
-        content: content // Save current content state
+        content: content
       });
     }
   }, [currentDimensions, content]);
@@ -330,15 +379,9 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
       e.stopPropagation();
       e.preventDefault();
       const touch = e.touches[0];
-      const deltaX = (touch.clientX - resizeStart.x) / scale;
-      const deltaY = (touch.clientY - resizeStart.y) / scale;
-      const newDimensions = {
-        width: Math.max(resizeStart.width + deltaX, 100),
-        height: Math.max(resizeStart.height + deltaY, 100)
-      };
-      setCurrentDimensions(newDimensions);
+      handleResizeMove(touch.clientX, touch.clientY);
     }
-  }, [isResizing, resizeStart, scale]);
+  }, [isResizing, handleResizeMove]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     if (node.node_type === 'text' && !(e.target as HTMLElement).closest('.node-controls')) {
@@ -349,21 +392,12 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
 
   const handleBlur = () => {
     setIsEditing(false);
-    if (content !== node.content) {
-      supabase
-        .from('nodes')
-        .update({ content })
-        .eq('id', node.id)
-        .then(({ error }) => {
-          if (error) {
-            import('@/lib/error-handler').then(({ handleError }) => {
-              handleError(error, {
-                title: "Content Update Failed",
-                message: "Unable to save text content changes"
-              });
-            });
-          }
-        });
+    // Force a final save of any pending content
+    if (contentUpdateTimeoutRef.current) {
+      clearTimeout(contentUpdateTimeoutRef.current);
+      if (content !== lastSavedContent) {
+        updateContent(content);
+      }
     }
   };
 
@@ -477,14 +511,22 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
     setIsMaximized(!isMaximized);
   }, [isMaximized, beforeMaximizeDimensions, currentDimensions, currentPosition, node.id, onUpdate]);
 
-  // Calculate border width based on node dimensions
-  const calculateBorderWidth = useCallback(() => {
-    const baseBorder = 1;
-    const minBorder = 1;
-    const maxBorder = 3;
-    const scaleFactor = Math.min(currentDimensions.width, currentDimensions.height) / 200;
-    return Math.min(maxBorder, Math.max(minBorder, baseBorder * Math.log10(scaleFactor + 1)));
-  }, [currentDimensions]);
+  // Calculate border color based on node type
+  const calculateBorderColor = useCallback(() => {
+    const opacity = isDragging ? '40' : '60';
+    switch (node.node_type) {
+      case 'text':
+        return `rgb(59 130 246 / ${opacity}%)`; // Blue
+      case 'image':
+        return `rgb(16 185 129 / ${opacity}%)`; // Green
+      case 'video':
+        return `rgb(239 68 68 / ${opacity}%)`; // Red
+      case 'pdf':
+        return `rgb(245 158 11 / ${opacity}%)`; // Amber
+      default:
+        return `rgb(156 163 175 / ${opacity}%)`; // Gray
+    }
+  }, [node.node_type, isDragging]);
 
   // Calculate header sizes based on node dimensions
   const calculateHeaderStyle = useCallback(() => {
@@ -721,23 +763,26 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
       ref={nodeRef}
       id={`node-${node.id}`}
       className={cn(
-        "absolute bg-white dark:bg-gray-800 rounded-lg shadow-lg group overflow-hidden transition-shadow duration-200",
-        "hover:shadow-xl focus-within:ring-2 focus-within:ring-primary/50",
+        "absolute rounded-lg overflow-hidden transition-all duration-200",
+        "bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
+        "shadow-lg hover:shadow-xl",
+        "before:absolute before:inset-0 before:rounded-lg before:pointer-events-none",
+        "before:transition-opacity before:duration-200",
+        "before:border-[1.5px] before:border-opacity-40 hover:before:border-opacity-60",
         isDragging && "cursor-grabbing opacity-75",
         !isDragging && !isEditing && "cursor-grab",
-        isResizing && "cursor-se-resize opacity-75"
+        isResizing && "cursor-se-resize opacity-75",
+        isEditing && "ring-2 ring-primary/30 before:border-primary/60",
       )}
       style={{
         transform: `translate(${currentPosition.x}px, ${currentPosition.y}px)`,
         width: currentDimensions.width,
         height: currentDimensions.height,
-        transition: isDragging || isResizing ? 'none' : 'box-shadow 0.2s ease, border-width 0.2s ease',
+        transition: isDragging || isResizing ? 'none' : 'all 0.2s ease-out',
         touchAction: "none",
         willChange: isDragging || isResizing ? "transform" : "auto",
-        borderWidth: `${calculateBorderWidth()}px`,
-        borderStyle: 'solid',
-        borderColor: 'var(--border)',
-      }}
+        '--border-color': calculateBorderColor(),
+      } as React.CSSProperties}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -771,11 +816,80 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
           </div>
           
           <div className="flex items-center gap-2">
-            {node.node_type === 'text' && isSaving && (
-              <div className="text-xs text-muted-foreground animate-pulse">
-                Saving...
-              </div>
+            {node.node_type === 'text' && (
+              <>
+                {isSaving && (
+                  <div className="text-xs text-muted-foreground animate-pulse">
+                    Saving...
+                  </div>
+                )}
+                <div className="flex items-center gap-1 mr-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => applyFormatting('bold')}
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                        style={{ 
+                          width: `${headerStyle.iconSize + 12}px`,
+                          height: `${headerStyle.iconSize + 12}px`
+                        }}
+                      >
+                        <Bold 
+                          style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
+                          className="text-gray-500 dark:text-gray-400" 
+                        />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Bold selected text</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => applyFormatting('italic')}
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                        style={{ 
+                          width: `${headerStyle.iconSize + 12}px`,
+                          height: `${headerStyle.iconSize + 12}px`
+                        }}
+                      >
+                        <Italic 
+                          style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
+                          className="text-gray-500 dark:text-gray-400" 
+                        />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Italicize selected text</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => applyFormatting('underline')}
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                        style={{ 
+                          width: `${headerStyle.iconSize + 12}px`,
+                          height: `${headerStyle.iconSize + 12}px`
+                        }}
+                      >
+                        <Underline 
+                          style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
+                          className="text-gray-500 dark:text-gray-400" 
+                        />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Underline selected text</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </>
             )}
+            
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -854,74 +968,6 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
           <div className="w-full h-full" onDoubleClick={handleDoubleClick}>
             {isEditing ? (
               <div className="w-full h-full relative">
-                <div className="absolute right-2 top-2 z-[60] flex gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        className="p-1.5 rounded bg-muted hover:bg-accent text-xs text-muted-foreground hover:text-accent-foreground flex items-center gap-2"
-                        type="button"
-                      >
-                        <Code2 className="h-4 w-4" />
-                        <span>Insert Code</span>
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent 
-                      className="w-[300px] p-0" 
-                      align="end"
-                      side="bottom"
-                      sideOffset={5}
-                      style={{ zIndex: 100 }}
-                    >
-                      <Command className="rounded-lg border shadow-md">
-                        <CommandInput autoFocus placeholder="Search snippets..." />
-                        <CommandList className="max-h-[300px] overflow-y-auto">
-                          <CommandEmpty>No snippets found.</CommandEmpty>
-                          {Object.entries(codeSnippets).map(([language, snippets]) => (
-                            <CommandGroup key={language} heading={language.toUpperCase()}>
-                              {snippets.map((snippet) => (
-                                <CommandItem
-                                  key={snippet.title}
-                                  onSelect={() => {
-                                    const textarea = document.querySelector(`#textarea-${node.id}`) as HTMLTextAreaElement;
-                                    if (textarea) {
-                                      const start = textarea.selectionStart;
-                                      const end = textarea.selectionEnd;
-                                      const newContent = 
-                                        content.substring(0, start) +
-                                        "\n```" + snippet.language + "\n" +
-                                        snippet.code +
-                                        "\n```\n" +
-                                        content.substring(end);
-                                      updateContent(newContent);
-                                      textarea.focus();
-                                      const newCursorPos = start + snippet.code.length + snippet.language.length + 7;
-                                      textarea.selectionStart = textarea.selectionEnd = newCursorPos;
-                                    }
-                                  }}
-                                  className="flex items-start gap-2 py-3"
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{snippet.title}</span>
-                                    <span className="text-xs text-muted-foreground">{snippet.description}</span>
-                                  </div>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          ))}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  <a
-                    href="https://www.markdownguide.org/basic-syntax/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 rounded bg-muted hover:bg-accent text-xs text-muted-foreground hover:text-accent-foreground flex items-center gap-2"
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    <span>Guide</span>
-                  </a>
-                </div>
                 <textarea
                   id={`textarea-${node.id}`}
                   className="w-full h-full p-2 bg-transparent resize-none focus:outline-none text-gray-700 dark:text-gray-200 border rounded font-mono"
@@ -931,17 +977,29 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
                     updateContent(newContent);
                     e.target.style.fontSize = calculateContentStyle().fontSize;
                   }}
-                  onBlur={() => setIsEditing(false)}
+                  onBlur={handleBlur}
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={handleKeyDown}
-                  style={contentStyle}
+                  style={{
+                    ...contentStyle,
+                    fontWeight: textStyle.bold ? 'bold' : 'normal',
+                    fontStyle: textStyle.italic ? 'italic' : 'normal',
+                    textDecoration: textStyle.underline ? 'underline' : 'none'
+                  }}
                   autoFocus
                   spellCheck="true"
-                  placeholder="Start typing... (Supports Markdown & Code Snippets)"
+                  placeholder="Start typing... (Supports Markdown)"
                 />
               </div>
             ) : (
-              <div className="w-full h-full overflow-auto prose dark:prose-invert max-w-none prose-sm">
+              <div 
+                className="w-full h-full overflow-auto prose dark:prose-invert max-w-none prose-sm"
+                style={{
+                  fontWeight: textStyle.bold ? 'bold' : 'normal',
+                  fontStyle: textStyle.italic ? 'italic' : 'normal',
+                  textDecoration: textStyle.underline ? 'underline' : 'none'
+                }}
+              >
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw, rehypeSanitize]}

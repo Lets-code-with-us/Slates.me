@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, File, Text, Moon, Sun, ZoomIn, ZoomOut, Upload, ChevronsUp, Home, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, File, FileText, Moon, Sun, ZoomIn, ZoomOut, Upload, ChevronsUp, Home, Loader2, Trash2, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 import { useDropzone } from "react-dropzone";
@@ -193,11 +193,14 @@ export const CanvasControls = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" size="icon" onClick={handleCreateTextNode}>
-                  <Text className="h-4 w-4" />
+                  <StickyNote className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">
-                <p>Add text node</p>
+                <div className="space-y-1">
+                  <p>Create note</p>
+                  <p className="text-xs text-muted-foreground">Add a new text note to your canvas</p>
+                </div>
               </TooltipContent>
             </Tooltip>
             
