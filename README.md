@@ -72,6 +72,18 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ## Contributors
 
+<table>
+<tr>
+    <td align="center" style="word-wrap: break-word; width: 150.0; height: 150.0">
+        <a href=https://github.com/RavindranathTagor>
+            <img src=https://avatars.githubusercontent.com/u/133690792?v=4 width="100;"  style="border-radius:50%;align-items:center;justify-content:center;overflow:hidden;padding-top:10px" alt=Ravindranath Tagore/>
+            <br />
+            <sub style="font-size:14px"><b>Ravindranath Tagore</b></sub>
+        </a>
+    </td>
+</tr>
+</table>
+
 Thanks to all our contributors who help make Slate Pad better! 
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
