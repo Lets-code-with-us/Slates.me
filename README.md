@@ -2,7 +2,9 @@
 
 An infinite canvas application for creating and organizing rich content nodes with support for text, images, videos, and PDFs.
 
-<img src="public/images/white-logo.png" alt="Slate Logo" width="300" />
+<p align="center">
+  <img src="public/images/white-logo.png" alt="Slate Logo" width="250" />
+</p>
 
 ## Features
 
@@ -78,18 +80,34 @@ Thanks to all our contributors who help make Slate Pad better!
 <table>
   <tbody>
     <tr>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/yourusername"><img src="https://avatars.githubusercontent.com/u/youruserid?v=4?s=100" width="100px;" alt="Your Name"/><br /><sub><b>Your Name</b></sub></a><br /><a href="#code-yourusername" title="Code">💻</a></td>
+      <td align="center" valign="top" width="14.28%">
+        <a href="https://github.com/RavindranathTagor">
+          <img src="https://avatars.githubusercontent.com/u/RavindranathTagor" width="100px;" alt="Ravindranath Tagor"/>
+          <br />
+          <sub><b>Ravindranath Tagor</b></sub>
+        </a>
+        <br />
+        <a href="#code-RavindranathTagor" title="Code">💻</a>
+        <a href="#doc-RavindranathTagor" title="Documentation">📖</a>
+        <a href="#design-RavindranathTagor" title="Design">🎨</a>
+        <a href="#ideas-RavindranathTagor" title="Ideas">🤔</a>
+      </td>
+      <td align="center" valign="top" width="14.28%">
+        <a href="https://github.com/PushpaaShetty">
+          <img src="https://avatars.githubusercontent.com/u/PushpaaShetty" width="100px;" alt="Pushpaa Shetty"/>
+          <br />
+          <sub><b>Pushpaa Shetty</b></sub>
+        </a>
+        <br />
+        <a href="#code-PushpaaShetty" title="Code">💻</a>
+        <a href="#doc-PushpaaShetty" title="Documentation">📖</a>
+      </td>
     </tr>
   </tbody>
 </table>
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/github/all-contributors/yourusername/slate-pad?color=ee8449&style=flat-square)](#contributors)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
-
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ### How to Become a Contributor

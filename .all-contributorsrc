@@ -7,7 +7,31 @@
   "imageSize": 100,
   "commit": false,
   "commitConvention": "none",
-  "contributors": [],
+  "contributors": [
+    {
+      "login": "RavindranathTagor",
+      "name": "Ravindranath Tagor",
+      "avatar_url": "https://avatars.githubusercontent.com/u/RavindranathTagor",
+      "profile": "https://github.com/RavindranathTagor",
+      "contributions": [
+        "code",
+        "doc",
+        "design",
+        "ideas"
+      ]
+    },
+    {
+      "login": "PushpaaShetty",
+      "name": "Pushpaa Shetty",
+      "avatar_url": "https://avatars.githubusercontent.com/u/PushpaaShetty",
+      "profile": "https://github.com/PushpaaShetty",
+      "contributions": [
+        "code",
+        "doc"
+      ]
+    }
+  ],
+  
   "contributorsPerLine": 7,
   "skipCi": true,
   "types": {
