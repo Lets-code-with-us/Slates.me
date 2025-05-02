@@ -1,3 +1,4 @@
+
 // Define types for node position and dimensions
 export type Position = { x: number; y: number };
 export type Dimensions = { width: number; height: number };
@@ -22,6 +23,7 @@ export interface Node {
   style?: object | string | null;
   created_at?: string;
   updated_at?: string;
+  keep_minimap_hidden?: boolean;
 }
 
 // Define NodeData for creating new nodes
@@ -35,4 +37,5 @@ export interface NodeData {
   file_name?: string | null;
   file_type?: string | null;
   style?: object | null;
+  keep_minimap_hidden?: boolean;
 }
