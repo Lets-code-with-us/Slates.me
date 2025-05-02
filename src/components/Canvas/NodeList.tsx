@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCallback, useEffect } from "react";
 
 // Type definitions for node position and dimensions
-type Position = { x: number; y: number };
-type Dimensions = { width: number; height: number };
+export type Position = { x: number; y: number };
+export type Dimensions = { width: number; height: number };
 type NodeUpdates = {
   position?: Position;
   dimensions?: Dimensions;

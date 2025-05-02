@@ -2,8 +2,6 @@
 import React, { useState, useRef, useCallback, useEffect, CSSProperties } from 'react';
 import { Node } from "@/types";
 import { Resizable } from 're-resizable';
-import { safeParsePosition, safeParseDimensions } from './NodeList';
-import { useDrag } from 'react-use-gesture';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +22,43 @@ const useDebounce = <T,>(value: T, delay: number): T => {
   return debouncedValue;
 };
 
+// Safe parsing functions for position and dimensions
+const safeParsePosition = (position: Position | string): Position => {
+  if (typeof position === 'string') {
+    try {
+      const parsed = JSON.parse(position);
+      if (parsed && typeof parsed === 'object' && 'x' in parsed && 'y' in parsed) {
+        return { 
+          x: Number(parsed.x), 
+          y: Number(parsed.y) 
+        };
+      }
+    } catch (e) {
+      console.error('Error parsing position:', e);
+    }
+    return { x: 0, y: 0 };
+  }
+  return position;
+};
+
+const safeParseDimensions = (dimensions: Dimensions | string): Dimensions => {
+  if (typeof dimensions === 'string') {
+    try {
+      const parsed = JSON.parse(dimensions);
+      if (parsed && typeof parsed === 'object' && 'width' in parsed && 'height' in parsed) {
+        return { 
+          width: Number(parsed.width), 
+          height: Number(parsed.height) 
+        };
+      }
+    } catch (e) {
+      console.error('Error parsing dimensions:', e);
+    }
+    return { width: 50, height: 50 };
+  }
+  return dimensions;
+};
+
 interface CanvasNodeProps {
   node: Node;
   scale: number;
@@ -40,11 +75,11 @@ export const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, o
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [showDeleteButton, setShowDeleteButton] = useState(false);
-  const [debouncedPosition] = useDebounce(position, 300);
-  const [debouncedDimensions] = useDebounce(dimensions, 300);
+  const debouncedPosition = useDebounce(position, 300);
+  const debouncedDimensions = useDebounce(dimensions, 300);
 
   // Node style based on type
-  const nodeStyle: Record<string, React.CSSProperties> = {
+  const nodeStyle: Record<string, CSSProperties> = {
     'text': {
       minWidth: '100px',
       minHeight: '50px',
@@ -135,28 +170,39 @@ export const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, o
     }
   };
 
-  // Drag gesture handler
-  const bind = useDrag(({ offset: [x, y], down, event }) => {
-    if (isResizing) return;
-
-    // Prevent dragging when interacting with form elements
-    if ((event?.target as HTMLElement)?.tagName?.match(/INPUT|TEXTAREA|SELECT/)) return;
-
-    setIsDragging(down);
-    if (down) {
+  // Temporary drag handler implementation
+  const bind = () => ({
+    onMouseDown: (e: React.MouseEvent) => {
+      if (isResizing) return;
+      if ((e.target as HTMLElement)?.tagName?.match(/INPUT|TEXTAREA|SELECT/)) return;
+      
+      setIsDragging(true);
       setZIndex(100);
-    } else {
-      setZIndex(1);
+      
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startPos = { x: position.x, y: position.y };
+      
+      const handleMouseMove = (e: MouseEvent) => {
+        const dx = (e.clientX - startX) / scale;
+        const dy = (e.clientY - startY) / scale;
+        
+        setPosition({
+          x: startPos.x + dx,
+          y: startPos.y + dy
+        });
+      };
+      
+      const handleMouseUp = () => {
+        setIsDragging(false);
+        setZIndex(1);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+      
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
     }
-
-    setPosition(prev => ({
-      x: prev.x + x / scale,
-      y: prev.y + y / scale,
-    }));
-  }, {
-    pointer: {
-      touch: true,
-    },
   });
 
   // Double click handler
