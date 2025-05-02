@@ -7,6 +7,18 @@ interface UseCanvasInteractionProps {
   updateViewConfig: (config: { zoom: number; position: { x: number; y: number } }) => void;
 }
 
+interface PositionScale {
+  newPosition: { x: number; y: number };
+  newScale: number;
+}
+
+interface PositionOnly {
+  newPosition: { x: number; y: number };
+  newScale?: never;
+}
+
+type InteractionResult = PositionScale | PositionOnly | null;
+
 interface CanvasInteractionResult {
   isDragging: boolean;
   setIsDragging: (isDragging: boolean) => void;
@@ -16,16 +28,16 @@ interface CanvasInteractionResult {
   setInitialPinchDistance: (distance: number | null) => void;
   initialScale: number;
   setInitialScale: (scale: number) => void;
-  handleWheel: (e: React.WheelEvent) => void;
+  handleWheel: (e: React.WheelEvent) => InteractionResult;
   handleTouchStart: (e: React.TouchEvent) => void;
-  handleTouchMove: (e: React.TouchEvent) => void;
+  handleTouchMove: (e: React.TouchEvent) => InteractionResult;
   handleTouchEnd: () => void;
   handleMouseDown: (e: React.MouseEvent) => void;
-  handleMouseMove: (e: React.MouseEvent) => void;
+  handleMouseMove: (e: React.MouseEvent) => InteractionResult;
   handleMouseUp: () => void;
   handleMouseLeave: () => void;
-  handleZoomIn: () => void;
-  handleZoomOut: () => void;
+  handleZoomIn: () => InteractionResult;
+  handleZoomOut: () => InteractionResult;
 }
 
 export const useCanvasInteraction = ({
@@ -65,7 +77,7 @@ export const useCanvasInteraction = ({
     [updateViewConfig]
   );
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
+  const handleWheel = useCallback((e: React.WheelEvent): InteractionResult => {
     e.preventDefault();
 
     if (e.ctrlKey || e.metaKey) {
@@ -98,10 +110,10 @@ export const useCanvasInteraction = ({
         y: position.y - e.deltaY,
       };
       debouncedUpdateViewConfig({ zoom: scale, position: newPosition });
-      return { newScale: scale, newPosition };
+      return { newPosition };
     }
     
-    return { newScale: scale, newPosition: position };
+    return null;
   }, [scale, position, containerRef, debouncedUpdateViewConfig]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -121,11 +133,11 @@ export const useCanvasInteraction = ({
     }
   }, [position, scale]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
+  const handleTouchMove = useCallback((e: React.TouchEvent): InteractionResult => {
+    if (e.touches.length === 2 && initialPinchDistance !== null) {
       e.preventDefault();
       const currentDistance = calculateDistance(e.touches);
-      const pinchRatio = currentDistance / (initialPinchDistance || currentDistance);
+      const pinchRatio = currentDistance / initialPinchDistance;
       const newScale = Math.min(Math.max(initialScale * pinchRatio, 0.1), 5);
       
       // Calculate center point between fingers
@@ -149,10 +161,10 @@ export const useCanvasInteraction = ({
         x: touch.clientX - dragStart.x,
         y: touch.clientY - dragStart.y,
       };
-      return { newPosition, newScale: scale };
+      return { newPosition };
     }
     
-    return { newPosition: position, newScale: scale };
+    return null;
   }, [initialPinchDistance, initialScale, isDragging, dragStart, scale, position]);
 
   const handleTouchEnd = useCallback(() => {
@@ -176,17 +188,17 @@ export const useCanvasInteraction = ({
     }
   }, [position]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent): InteractionResult => {
     if (isDragging) {
       e.preventDefault();
       const newPosition = {
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
       };
-      return { newPosition, newScale: scale };
+      return { newPosition };
     }
-    return { newPosition: position, newScale: scale };
-  }, [isDragging, dragStart, position, scale]);
+    return null;
+  }, [isDragging, dragStart]);
 
   const handleMouseUp = useCallback(() => {
     if (isDragging) {
@@ -207,8 +219,8 @@ export const useCanvasInteraction = ({
     }
   }, [isDragging, scale, position, debouncedUpdateViewConfig]);
 
-  const handleZoomIn = useCallback(() => {
-    if (!containerRef.current) return;
+  const handleZoomIn = useCallback((): InteractionResult => {
+    if (!containerRef.current) return null;
     
     const newScale = Math.min(scale * 1.1, 5);
     const rect = containerRef.current.getBoundingClientRect();
@@ -231,8 +243,8 @@ export const useCanvasInteraction = ({
     return { newScale, newPosition };
   }, [scale, position, containerRef, debouncedUpdateViewConfig]);
 
-  const handleZoomOut = useCallback(() => {
-    if (!containerRef.current) return;
+  const handleZoomOut = useCallback((): InteractionResult => {
+    if (!containerRef.current) return null;
     
     const newScale = Math.max(scale * 0.9, 0.1);
     const rect = containerRef.current.getBoundingClientRect();

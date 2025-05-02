@@ -4,7 +4,6 @@ import { Node } from "@/types";
 import { Resizable } from 're-resizable';
 import { safeParsePosition, safeParseDimensions } from './NodeList';
 import { useDrag } from 'react-use-gesture';
-import { useDebounce as useDebounceHook } from 'usehooks-ts';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 type Position = { x: number; y: number };
 type Dimensions = { width: number; height: number };
 
-// Create custom hook for debouncing since usehooks-ts doesn't export useDebounce directly
+// Create custom hook for debouncing
 const useDebounce = <T,>(value: T, delay: number): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
@@ -57,7 +56,7 @@ export const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, o
       fontFamily: 'sans-serif',
       fontSize: '1rem',
       lineHeight: '1.4',
-      wordWrap: 'break-word' as 'break-word',
+      wordWrap: 'break-word',
       overflow: 'hidden',
       whiteSpace: 'pre-wrap',
     },
@@ -96,13 +95,9 @@ export const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, o
     const fetchFile = async () => {
       if (node.file_path) {
         try {
-          const { data, error } = await supabase.storage
+          const { data } = await supabase.storage
             .from('canvas-files')
             .getPublicUrl(node.file_path);
-
-          if (error) {
-            throw error;
-          }
 
           setFileUrl(data.publicUrl);
         } catch (error) {
@@ -210,8 +205,6 @@ export const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, o
       ref={nodeRef}
       {...bind()}
       style={{
-        x: 0,
-        y: 0,
         position: 'absolute',
         left: position.x,
         top: position.y,
