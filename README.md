@@ -2,7 +2,7 @@
 
 An infinite canvas application for creating and organizing rich content nodes with support for text, images, videos, and PDFs.
 
-![Slate Logo](public/images/white-logo.png)
+<img src="public/images/white-logo.png" alt="Slate Logo" width="300" />
 
 ## Features
 
@@ -27,7 +27,7 @@ An infinite canvas application for creating and organizing rich content nodes wi
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/slate-pad.git
+git clone https://github.com/RavindranathTagor/slate-pad.git
 cd slate-pad
 ```
 
@@ -109,9 +109,9 @@ This project is open source and available under the [MIT License](LICENSE).
 ## Support
 
 If you encounter any issues or have questions:
-1. Check the [Issues](https://github.com/yourusername/slate-pad/issues) page
+1. Check the [Issues](https://github.com/RavindranathTagor/slate-pad/issues) page
 2. Create a new issue if your problem isn't already listed
-3. Join our community discussions
+3. Visit [slates.me](https://slates.me) to join our community
 
 ## Star the Project ⭐
 

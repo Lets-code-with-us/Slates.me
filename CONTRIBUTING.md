@@ -16,7 +16,7 @@ By participating in this project, you are expected to uphold our Code of Conduct
 
 ### Reporting Bugs
 
-Before creating bug reports, please check [existing issues](https://github.com/yourusername/slate-pad/issues) to avoid duplication. When you create a bug report, include as many details as possible:
+Before creating bug reports, please check [existing issues](https://github.com/RavindranathTagor/slate-pad/issues) to avoid duplication. When you create a bug report, include as many details as possible:
 
 - Use a clear and descriptive title
 - Describe the exact steps to reproduce the problem
