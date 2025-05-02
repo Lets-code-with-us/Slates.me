@@ -2,7 +2,7 @@
 
 An infinite canvas application for creating and organizing rich content nodes with support for text, images, videos, and PDFs.
 
-![Slate Logo](public/images/layers-svgrepo-com (2).svg)
+![Slate Logo](public/images/white logo.png)
 
 ## Features
 
