@@ -58,7 +58,7 @@ export const CanvasContainer = ({
   // Handle wheel event
   const onWheel = (e: React.WheelEvent) => {
     const result = handleWheel(e);
-    if (result) {
+    if (result && 'newScale' in result && 'newPosition' in result) {
       setScale(result.newScale);
       setPosition(result.newPosition);
     }
@@ -67,7 +67,7 @@ export const CanvasContainer = ({
   // Handle touch move with state updates
   const onTouchMove = (e: React.TouchEvent) => {
     const result = handleTouchMove(e);
-    if (result) {
+    if (result && 'newScale' in result && 'newPosition' in result) {
       setScale(result.newScale);
       setPosition(result.newPosition);
     }
@@ -76,7 +76,7 @@ export const CanvasContainer = ({
   // Handle mouse move with state updates
   const onMouseMove = (e: React.MouseEvent) => {
     const result = handleMouseMove(e);
-    if (result) {
+    if (result && 'newPosition' in result) {
       setPosition(result.newPosition);
     }
   };

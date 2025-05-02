@@ -16,7 +16,7 @@ type NodeUpdates = {
 /**
  * Safely parse position object from potential string
  */
-const safeParsePosition = (position: Position | string): Position => {
+export const safeParsePosition = (position: Position | string): Position => {
   if (typeof position === 'string') {
     try {
       const parsed = JSON.parse(position);
@@ -39,7 +39,7 @@ const safeParsePosition = (position: Position | string): Position => {
 /**
  * Safely parse dimensions object from potential string
  */
-const safeParseDimensions = (dimensions: Dimensions | string): Dimensions => {
+export const safeParseDimensions = (dimensions: Dimensions | string): Dimensions => {
   if (typeof dimensions === 'string') {
     try {
       const parsed = JSON.parse(dimensions);

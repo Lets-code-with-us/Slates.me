@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useCanvas } from "@/hooks/useCanvas";
 import { CanvasControls } from "./CanvasControls";
@@ -141,14 +142,15 @@ export const InfiniteCanvas = ({ code = '' }: InfiniteCanvasProps) => {
 
   const handleZoomIn = useCallback(() => {
     if (containerRef.current) {
-      const result = useCanvasInteraction({
+      const canvasInteraction = useCanvasInteraction({
         containerRef,
         scale,
         position,
         updateViewConfig
-      }).handleZoomIn();
+      });
       
-      if (result) {
+      const result = canvasInteraction.handleZoomIn();
+      if (result && 'newScale' in result && 'newPosition' in result) {
         setScale(result.newScale);
         setPosition(result.newPosition);
       }
@@ -157,14 +159,15 @@ export const InfiniteCanvas = ({ code = '' }: InfiniteCanvasProps) => {
 
   const handleZoomOut = useCallback(() => {
     if (containerRef.current) {
-      const result = useCanvasInteraction({
+      const canvasInteraction = useCanvasInteraction({
         containerRef,
         scale,
         position,
         updateViewConfig
-      }).handleZoomOut();
+      });
       
-      if (result) {
+      const result = canvasInteraction.handleZoomOut();
+      if (result && 'newScale' in result && 'newPosition' in result) {
         setScale(result.newScale);
         setPosition(result.newPosition);
       }

@@ -1,16 +1,29 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+
+import React, { useState, useRef, useCallback, useEffect, CSSProperties } from 'react';
 import { Node } from "@/types";
 import { Resizable } from 're-resizable';
 import { safeParsePosition, safeParseDimensions } from './NodeList';
 import { useDrag } from 'react-use-gesture';
-import { useDebounce } from 'usehooks-ts';
+import { useDebounce as useDebounceHook } from 'usehooks-ts';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 // Type definitions for node position and dimensions
 type Position = { x: number; y: number };
 type Dimensions = { width: number; height: number };
+
+// Create custom hook for debouncing since usehooks-ts doesn't export useDebounce directly
+const useDebounce = <T,>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+};
 
 interface CanvasNodeProps {
   node: Node;
@@ -32,7 +45,7 @@ export const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, o
   const [debouncedDimensions] = useDebounce(dimensions, 300);
 
   // Node style based on type
-  const nodeStyle = {
+  const nodeStyle: Record<string, React.CSSProperties> = {
     'text': {
       minWidth: '100px',
       minHeight: '50px',
@@ -44,7 +57,7 @@ export const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, o
       fontFamily: 'sans-serif',
       fontSize: '1rem',
       lineHeight: '1.4',
-      wordWrap: 'break-word',
+      wordWrap: 'break-word' as 'break-word',
       overflow: 'hidden',
       whiteSpace: 'pre-wrap',
     },
