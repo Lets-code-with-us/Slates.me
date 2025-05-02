@@ -1,4 +1,3 @@
-
 import { Node } from "@/types";
 import { CanvasNode } from "./CanvasNode";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,10 +67,9 @@ interface NodeListProps {
     width: number;
     height: number;
   };
-  onNodeDoubleClick?: (node: Node) => void;
 }
 
-export const NodeList = ({ nodes, scale, viewportBounds, onNodeDoubleClick }: NodeListProps) => {
+export const NodeList = ({ nodes, scale, viewportBounds }: NodeListProps) => {
   const handleNodeUpdate = async (nodeId: string, position: Position, dimensions?: Dimensions) => {
     try {
       // Create updates object with position
@@ -140,7 +138,6 @@ export const NodeList = ({ nodes, scale, viewportBounds, onNodeDoubleClick }: No
           node={node} 
           scale={scale}
           onUpdate={handleNodeUpdate}
-          onDoubleClick={onNodeDoubleClick}
         />
       ))}
     </>

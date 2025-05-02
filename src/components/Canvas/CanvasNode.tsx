@@ -13,7 +13,7 @@ import { highlightCode } from '@/lib/syntax-highlighter';
 import 'highlight.js/styles/github-dark.css';
 import { Components } from 'react-markdown';
 
-// Type definitions for position and dimensions
+// Type definitions for position and dimensions (same as in NodeList)
 type Position = { x: number; y: number };
 type Dimensions = { width: number; height: number };
 
@@ -65,345 +65,13 @@ const safeParseDimensions = (dimensions: Dimensions | string): Dimensions => {
   return dimensions;
 };
 
-interface NodeHeaderProps {
-  nodeId: string;
-  filePath?: string;
-  fileName?: string;
-  nodeType: 'text' | 'image' | 'video' | 'pdf';
-  isMaximized: boolean;
-  isSaving?: boolean;
-  onToggleMaximize: () => void;
-  onDelete: () => void;
-  onDownload: (e: React.MouseEvent) => void;
-  onFormatText?: (format: 'bold' | 'italic' | 'underline') => void;
-  headerStyle: {
-    height: number;
-    fontSize: number;
-    iconSize: number;
-  };
-}
-
-const NodeHeader: React.FC<NodeHeaderProps> = ({
-  nodeId,
-  filePath,
-  fileName,
-  nodeType,
-  isMaximized,
-  isSaving,
-  onToggleMaximize,
-  onDelete,
-  onDownload,
-  onFormatText,
-  headerStyle
-}) => {
-  return (
-    <TooltipProvider delayDuration={300}>
-      <div 
-        className="absolute top-0 left-0 right-0 bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 flex items-center px-3 transition-all duration-200"
-        style={{ 
-          height: `${headerStyle.height}px`,
-          minHeight: '32px'
-        }}
-      >
-        <Move 
-          className="text-gray-500 dark:text-gray-400 mr-3 flex-shrink-0" 
-          style={{ 
-            width: `${headerStyle.iconSize}px`,
-            height: `${headerStyle.iconSize}px`
-          }}
-        />
-        <div 
-          className="text-gray-600 dark:text-gray-300 truncate flex-1 select-none font-medium"
-          style={{ fontSize: `${headerStyle.fontSize}px` }}
-        >
-          {fileName || nodeType}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {nodeType === 'text' && onFormatText && (
-            <>
-              {isSaving && (
-                <div className="text-xs text-muted-foreground animate-pulse">
-                  Saving...
-                </div>
-              )}
-              <div className="flex items-center gap-1 mr-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => onFormatText('bold')}
-                      className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                      style={{ 
-                        width: `${headerStyle.iconSize + 12}px`,
-                        height: `${headerStyle.iconSize + 12}px`
-                      }}
-                    >
-                      <Bold 
-                        style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                        className="text-gray-500 dark:text-gray-400" 
-                      />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Bold selected text</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => onFormatText('italic')}
-                      className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                      style={{ 
-                        width: `${headerStyle.iconSize + 12}px`,
-                        height: `${headerStyle.iconSize + 12}px`
-                      }}
-                    >
-                      <Italic 
-                        style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                        className="text-gray-500 dark:text-gray-400" 
-                      />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Italicize selected text</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => onFormatText('underline')}
-                      className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                      style={{ 
-                        width: `${headerStyle.iconSize + 12}px`,
-                        height: `${headerStyle.iconSize + 12}px`
-                      }}
-                    >
-                      <Underline 
-                        style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                        className="text-gray-500 dark:text-gray-400" 
-                      />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Underline selected text</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </>
-          )}
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onToggleMaximize}
-                className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                style={{ 
-                  width: `${headerStyle.iconSize + 12}px`,
-                  height: `${headerStyle.iconSize + 12}px`
-                }}
-              >
-                {isMaximized ? 
-                  <ChevronsUpDown style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }} className="text-gray-500 dark:text-gray-400" /> : 
-                  <Maximize2 style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }} className="text-gray-500 dark:text-gray-400" />
-                }
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>{isMaximized ? "Restore" : "Maximize"}</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onDownload}
-                className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                style={{ 
-                  width: `${headerStyle.iconSize + 12}px`,
-                  height: `${headerStyle.iconSize + 12}px`
-                }}
-              >
-                <Download 
-                  style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                  className="text-gray-500 dark:text-gray-400" 
-                />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Download</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onDelete}
-                className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center justify-center"
-                style={{ 
-                  width: `${headerStyle.iconSize + 12}px`,
-                  height: `${headerStyle.iconSize + 12}px`
-                }}
-              >
-                <Trash2 
-                  style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                  className="text-red-500 dark:text-red-400" 
-                />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Delete</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
-    </TooltipProvider>
-  );
-};
-
-interface NodeContentProps {
-  node: Node;
-  content: string;
-  isEditing: boolean;
-  textStyle: {
-    bold: boolean;
-    italic: boolean;
-    underline: boolean;
-  };
-  contentStyle: Record<string, any>;
-  onDoubleClick: (e: React.MouseEvent) => void;
-}
-
-const NodeContent: React.FC<NodeContentProps> = ({
-  node,
-  content,
-  isEditing,
-  textStyle,
-  contentStyle,
-  onDoubleClick
-}) => {
-  if (node.node_type === 'text') {
-    return (
-      <div 
-        className="w-full h-full overflow-auto prose dark:prose-invert max-w-none prose-sm"
-        style={{
-          fontWeight: textStyle.bold ? 'bold' : 'normal',
-          fontStyle: textStyle.italic ? 'italic' : 'normal',
-          textDecoration: textStyle.underline ? 'underline' : 'none'
-        }}
-        onDoubleClick={onDoubleClick}
-      >
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeRaw, rehypeSanitize]}
-          components={{
-            // Override styles for specific elements
-            a: ({node, ...props}) => (
-              <a {...props} className="text-primary hover:text-primary/80 no-underline hover:underline" target="_blank" rel="noopener noreferrer" />
-            ),
-            code: ({inline, className, children, ...props}: CodeProps) => {
-              const match = /language-(\w+)/.exec(className || '');
-              const language = match ? match[1] : undefined;
-              const code = String(children).replace(/\n$/, '');
-              
-              if (inline) {
-                return (
-                  <code 
-                    className={cn(
-                      "bg-muted px-1.5 py-0.5 rounded-sm font-mono text-sm",
-                      className
-                    )} 
-                    {...props}
-                  >
-                    {code}
-                  </code>
-                );
-              }
-
-              const highlighted = highlightCode(code, language);
-              
-              return (
-                <div className="relative group">
-                  <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(code);
-                      }}
-                      className="p-1.5 rounded bg-muted/50 hover:bg-muted text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  {language && (
-                    <div className="absolute right-2 top-2 text-xs text-muted-foreground font-mono opacity-50">
-                      {language}
-                    </div>
-                  )}
-                  <pre className="relative bg-muted p-4 rounded-lg overflow-x-auto">
-                    <code
-                      className={cn("block font-mono text-sm", className)}
-                      dangerouslySetInnerHTML={{ __html: highlighted }}
-                    />
-                  </pre>
-                </div>
-              );
-            },
-            img: ({node, ...props}) => (
-              <img {...props} className="rounded-lg max-h-64 object-contain" />
-            ),
-            blockquote: ({node, ...props}) => (
-              <blockquote {...props} className="border-l-4 border-muted pl-4 italic" />
-            ),
-            table: ({node, ...props}) => (
-              <div className="overflow-x-auto">
-                <table {...props} className="border-collapse table-auto w-full text-sm" />
-              </div>
-            ),
-            th: ({node, ...props}) => (
-              <th {...props} className="border border-muted px-4 py-2 text-left font-medium" />
-            ),
-            td: ({node, ...props}) => (
-              <td {...props} className="border border-muted px-4 py-2" />
-            )
-          }}
-        >
-          {content || 'Double click to edit'}
-        </ReactMarkdown>
-      </div>
-    );
-  } else {
-    return <FilePreview node={node} />;
-  }
-};
-
-interface ResizeHandleProps {
-  onResizeStart: (e: React.MouseEvent | React.TouchEvent) => void;
-}
-
-const ResizeHandle: React.FC<ResizeHandleProps> = ({ onResizeStart }) => {
-  return (
-    <div
-      className="absolute bottom-0 right-0 w-8 h-8 cursor-se-resize hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-tl transition-colors"
-      onMouseDown={(e) => {
-        if (e.button === 0) onResizeStart(e);
-      }}
-      onTouchStart={onResizeStart}
-      style={{
-        background: 'linear-gradient(135deg, transparent 50%, rgba(209, 213, 219, 0.5) 50%)',
-      }}
-    />
-  );
-};
-
 interface CanvasNodeProps {
   node: Node;
   scale: number;
   onUpdate: (nodeId: string, position: Position, dimensions?: Dimensions) => void;
-  onDoubleClick?: (node: Node) => void;
 }
 
-const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, onDoubleClick }) => {
+const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -518,6 +186,27 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, onDouble
       updateContent(newContent);
       return;
     }
+    
+    // If editing and text is selected, format only the selection
+    const textarea = document.getElementById(`textarea-${node.id}`) as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start === end) return; // No text selected
+
+    const selectedText = content.substring(start, end);
+    const formattedText = formatText(selectedText);
+    const newContent = content.substring(0, start) + formattedText + content.substring(end);
+    updateContent(newContent);
+
+    // Restore selection with offset for markdown syntax
+    const offset = style === 'bold' ? 2 : (style === 'italic' ? 1 : 3);
+    setTimeout(() => {
+      textarea.selectionStart = start + offset;
+      textarea.selectionEnd = end + offset;
+      textarea.focus();
+    }, 10);
   };
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -598,66 +287,35 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, onDouble
     onUpdate(node.id, currentPosition, finalDimensions);
   }, [node.id, currentPosition, resizeStart.content, content, onUpdate]);
 
-  const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    document.body.style.userSelect = 'none';
-    setIsResizing(true);
-    
-    const clientX = 'touches' in e 
-      ? e.touches[0].clientX 
-      : (e as React.MouseEvent).clientX;
-      
-    const clientY = 'touches' in e 
-      ? e.touches[0].clientY 
-      : (e as React.MouseEvent).clientY;
-    
-    setResizeStart({
-      width: currentDimensions.width,
-      height: currentDimensions.height,
-      x: clientX,
-      y: clientY,
-      content: content
-    });
-
-    const handleMouseMove = (e: MouseEvent) => {
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    if (e.button === 0) {  // Only start resize on left click
+      e.stopPropagation();
       e.preventDefault();
-      handleResizeMove(e.clientX, e.clientY);
-    };
+      document.body.style.userSelect = 'none';
+      setIsResizing(true);
+      setResizeStart({
+        width: currentDimensions.width,
+        height: currentDimensions.height,
+        x: e.clientX,
+        y: e.clientY,
+        content: content
+      });
 
-    const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-      if (e.touches.length > 0) {
-        handleResizeMove(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    };
+      const handleMouseMove = (e: MouseEvent) => {
+        e.preventDefault();
+        handleResizeMove(e.clientX, e.clientY);
+      };
 
-    const handlePointerUp = (e: MouseEvent | TouchEvent) => {
-      e.preventDefault();
-      
-      const clientX = 'touches' in e && e.touches.length > 0
-        ? e.touches[0].clientX 
-        : (e as MouseEvent).clientX;
-        
-      const clientY = 'touches' in e && e.touches.length > 0
-        ? e.touches[0].clientY 
-        : (e as MouseEvent).clientY;
-      
-      const finalDimensions = handleResizeMove(clientX, clientY);
-      handleResizeEnd(finalDimensions);
-      
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('touchmove', handleTouchMove, { passive: false });
-      document.removeEventListener('mouseup', handlePointerUp);
-      document.removeEventListener('touchend', handlePointerUp);
-    };
+      const handleMouseUp = (e: MouseEvent) => {
+        e.preventDefault();
+        const finalDimensions = handleResizeMove(e.clientX, e.clientY);
+        handleResizeEnd(finalDimensions);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
 
-    if ('touches' in e) {
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handlePointerUp);
-    } else {
       document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handlePointerUp);
+      document.addEventListener('mouseup', handleMouseUp);
     }
   }, [currentDimensions, content, handleResizeMove, handleResizeEnd]);
 
@@ -699,16 +357,49 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, onDouble
     }
   }, [isResizing, isDragging, currentDimensions, currentPosition, node.id, handleResizeEnd, onUpdate]);
 
-  const handleNodeDoubleClick = useCallback((e: React.MouseEvent) => {
+  const handleTouchResizeStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      e.stopPropagation();
+      e.preventDefault();
+      document.body.style.userSelect = 'none';
+      setIsResizing(true);
+      const touch = e.touches[0];
+      setResizeStart({
+        width: currentDimensions.width,
+        height: currentDimensions.height,
+        x: touch.clientX,
+        y: touch.clientY,
+        content: content
+      });
+    }
+  }, [currentDimensions, content]);
+
+  const handleTouchResize = useCallback((e: React.TouchEvent) => {
+    if (isResizing && e.touches.length === 1) {
+      e.stopPropagation();
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleResizeMove(touch.clientX, touch.clientY);
+    }
+  }, [isResizing, handleResizeMove]);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     if (node.node_type === 'text' && !(e.target as HTMLElement).closest('.node-controls')) {
       e.stopPropagation();
-      
-      if (onDoubleClick) {
-        // Use the new text editor API provided by parent component
-        onDoubleClick(node);
+      setIsEditing(true);
+    }
+  }, [node.node_type]);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    // Force a final save of any pending content
+    if (contentUpdateTimeoutRef.current) {
+      clearTimeout(contentUpdateTimeoutRef.current);
+      if (content !== lastSavedContent) {
+        updateContent(content);
       }
     }
-  }, [node, onDoubleClick]);
+  };
 
   const handleDelete = async () => {
     try {
@@ -892,6 +583,171 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, onDouble
     };
   }, [currentDimensions, content, isDragging, isResizing]);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    e.stopPropagation();
+    
+    // Save on Ctrl+S or Cmd+S
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      setIsEditing(false);
+      return;
+    }
+
+    // Support tab indentation
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      
+      // Multi-line tab support
+      if (start !== end) {
+        const lines = content.split('\n');
+        let startLine = content.substring(0, start).split('\n').length - 1;
+        let endLine = content.substring(0, end).split('\n').length - 1;
+        
+        // If selection ends at start of line, don't include that line
+        if (end > 0 && content.substring(0, end).endsWith('\n')) {
+          endLine--;
+        }
+        
+        const newLines = lines.map((line, i) => {
+          if (i >= startLine && i <= endLine) {
+            return '    ' + line;
+          }
+          return line;
+        });
+        
+        const newContent = newLines.join('\n');
+        updateContent(newContent);
+        
+        // Adjust selection to maintain relative positions
+        setTimeout(() => {
+          target.selectionStart = start + 4;
+          target.selectionEnd = end + 4 * (endLine - startLine + 1);
+        }, 0);
+      } else {
+        // Single line tab insertion
+        const newContent = content.substring(0, start) + '    ' + content.substring(end);
+        updateContent(newContent);
+        setTimeout(() => {
+          target.selectionStart = target.selectionEnd = start + 4;
+        }, 0);
+      }
+      return;
+    }
+
+    // Handle Shift+Tab for unindent
+    if (e.shiftKey && e.key === 'Tab') {
+      e.preventDefault();
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      
+      // Multi-line unindent
+      if (start !== end) {
+        const lines = content.split('\n');
+        let startLine = content.substring(0, start).split('\n').length - 1;
+        let endLine = content.substring(0, end).split('\n').length - 1;
+        
+        // If selection ends at start of line, don't include that line
+        if (end > 0 && content.substring(0, end).endsWith('\n')) {
+          endLine--;
+        }
+        
+        const newLines = lines.map((line, i) => {
+          if (i >= startLine && i <= endLine) {
+            return line.replace(/^( {1,4}|\t)/, '');
+          }
+          return line;
+        });
+        
+        const newContent = newLines.join('\n');
+        updateContent(newContent);
+        
+        // Adjust selection
+        setTimeout(() => {
+          target.selectionStart = start - (lines[startLine].startsWith('    ') ? 4 : 0);
+          target.selectionEnd = end - (endLine - startLine + 1) * 4;
+        }, 0);
+      } else {
+        // Single line unindent
+        const currentLine = content.split('\n')[content.substring(0, start).split('\n').length - 1];
+        if (currentLine.startsWith('    ')) {
+          const newContent = content.substring(0, start - 4) + content.substring(start);
+          updateContent(newContent);
+          setTimeout(() => {
+            target.selectionStart = target.selectionEnd = start - 4;
+          }, 0);
+        }
+      }
+      return;
+    }
+
+    // Auto-close brackets and quotes
+    const pairs: { [key: string]: string } = {
+      '(': ')',
+      '{': '}',
+      '[': ']',
+      '"': '"',
+      "'": "'",
+      '`': '`'
+    };
+
+    if (pairs[e.key]) {
+      e.preventDefault();
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      
+      // If text is selected, wrap it in the pairs
+      if (start !== end) {
+        const newContent = 
+          content.substring(0, start) + 
+          e.key + 
+          content.substring(start, end) + 
+          pairs[e.key] + 
+          content.substring(end);
+        updateContent(newContent);
+        setTimeout(() => {
+          target.selectionStart = start + 1;
+          target.selectionEnd = end + 1;
+        }, 0);
+      } else {
+        const newContent = 
+          content.substring(0, start) + 
+          e.key + 
+          pairs[e.key] + 
+          content.substring(end);
+        updateContent(newContent);
+        setTimeout(() => {
+          target.selectionStart = target.selectionEnd = start + 1;
+        }, 0);
+      }
+      return;
+    }
+
+    // Auto-close Markdown code blocks
+    if (e.key === '`') {
+      const target = e.target as HTMLTextAreaElement;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      
+      if (content.substring(start - 2, start) === '``') {
+        e.preventDefault();
+        const newContent = 
+          content.substring(0, start) + 
+          '`\n\n```' + 
+          content.substring(end);
+        updateContent(newContent);
+        setTimeout(() => {
+          target.selectionStart = target.selectionEnd = start + 1;
+        }, 0);
+      }
+      return;
+    }
+  };
+
   const headerStyle = calculateHeaderStyle();
   const contentStyle = calculateContentStyle();
 
@@ -934,21 +790,171 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, onDouble
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onDoubleClick={handleNodeDoubleClick}
+      onDoubleClick={handleDoubleClick}
     >
-      <NodeHeader
-        nodeId={node.id}
-        filePath={node.file_path}
-        fileName={node.file_name}
-        nodeType={node.node_type}
-        isMaximized={isMaximized}
-        isSaving={isSaving}
-        onToggleMaximize={handleToggleMaximize}
-        onDelete={handleDelete}
-        onDownload={handleDownload}
-        onFormatText={applyFormatting}
-        headerStyle={headerStyle}
-      />
+      {/* Header bar with controls */}
+      <TooltipProvider delayDuration={300}>
+        <div 
+          className="absolute top-0 left-0 right-0 bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 flex items-center px-3 transition-all duration-200"
+          style={{ 
+            height: `${headerStyle.height}px`,
+            minHeight: '32px'
+          }}
+        >
+          <Move 
+            className="text-gray-500 dark:text-gray-400 mr-3 flex-shrink-0" 
+            style={{ 
+              width: `${headerStyle.iconSize}px`,
+              height: `${headerStyle.iconSize}px`
+            }}
+          />
+          <div 
+            className="text-gray-600 dark:text-gray-300 truncate flex-1 select-none font-medium"
+            style={{ fontSize: `${headerStyle.fontSize}px` }}
+          >
+            {node.file_name || node.node_type}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {node.node_type === 'text' && (
+              <>
+                {isSaving && (
+                  <div className="text-xs text-muted-foreground animate-pulse">
+                    Saving...
+                  </div>
+                )}
+                <div className="flex items-center gap-1 mr-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => applyFormatting('bold')}
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                        style={{ 
+                          width: `${headerStyle.iconSize + 12}px`,
+                          height: `${headerStyle.iconSize + 12}px`
+                        }}
+                      >
+                        <Bold 
+                          style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
+                          className="text-gray-500 dark:text-gray-400" 
+                        />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Bold selected text</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => applyFormatting('italic')}
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                        style={{ 
+                          width: `${headerStyle.iconSize + 12}px`,
+                          height: `${headerStyle.iconSize + 12}px`
+                        }}
+                      >
+                        <Italic 
+                          style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
+                          className="text-gray-500 dark:text-gray-400" 
+                        />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Italicize selected text</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => applyFormatting('underline')}
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                        style={{ 
+                          width: `${headerStyle.iconSize + 12}px`,
+                          height: `${headerStyle.iconSize + 12}px`
+                        }}
+                      >
+                        <Underline 
+                          style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
+                          className="text-gray-500 dark:text-gray-400" 
+                        />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Underline selected text</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </>
+            )}
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleToggleMaximize}
+                  className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                  style={{ 
+                    width: `${headerStyle.iconSize + 12}px`,
+                    height: `${headerStyle.iconSize + 12}px`
+                  }}
+                >
+                  {isMaximized ? 
+                    <ChevronsUpDown style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }} className="text-gray-500 dark:text-gray-400" /> : 
+                    <Maximize2 style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }} className="text-gray-500 dark:text-gray-400" />
+                  }
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>{isMaximized ? "Restore" : "Maximize"}</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleDownload}
+                  className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+                  style={{ 
+                    width: `${headerStyle.iconSize + 12}px`,
+                    height: `${headerStyle.iconSize + 12}px`
+                  }}
+                >
+                  <Download 
+                    style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
+                    className="text-gray-500 dark:text-gray-400" 
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>Download</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={handleDelete}
+                  className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center justify-center"
+                  style={{ 
+                    width: `${headerStyle.iconSize + 12}px`,
+                    height: `${headerStyle.iconSize + 12}px`
+                  }}
+                >
+                  <Trash2 
+                    style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
+                    className="text-red-500 dark:text-red-400" 
+                  />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>Delete</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+      </TooltipProvider>
 
       {/* Content area with dynamic text size */}
       <div 
@@ -958,20 +964,141 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, onDouble
           marginTop: `${headerStyle.height}px`
         }}
       >
-        <NodeContent
-          node={node}
-          content={content}
-          isEditing={isEditing}
-          textStyle={textStyle}
-          contentStyle={contentStyle}
-          onDoubleClick={handleNodeDoubleClick}
-        />
+        {node.node_type === 'text' && (
+          <div className="w-full h-full" onDoubleClick={handleDoubleClick}>
+            {isEditing ? (
+              <div className="w-full h-full relative">
+                <textarea
+                  id={`textarea-${node.id}`}
+                  className="w-full h-full p-2 bg-transparent resize-none focus:outline-none text-gray-700 dark:text-gray-200 border rounded font-mono"
+                  value={content}
+                  onChange={(e) => {
+                    const newContent = e.target.value;
+                    updateContent(newContent);
+                    e.target.style.fontSize = calculateContentStyle().fontSize;
+                  }}
+                  onBlur={handleBlur}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={handleKeyDown}
+                  style={{
+                    ...contentStyle,
+                    fontWeight: textStyle.bold ? 'bold' : 'normal',
+                    fontStyle: textStyle.italic ? 'italic' : 'normal',
+                    textDecoration: textStyle.underline ? 'underline' : 'none'
+                  }}
+                  autoFocus
+                  spellCheck="true"
+                  placeholder="Start typing... (Supports Markdown)"
+                />
+              </div>
+            ) : (
+              <div 
+                className="w-full h-full overflow-auto prose dark:prose-invert max-w-none prose-sm"
+                style={{
+                  fontWeight: textStyle.bold ? 'bold' : 'normal',
+                  fontStyle: textStyle.italic ? 'italic' : 'normal',
+                  textDecoration: textStyle.underline ? 'underline' : 'none'
+                }}
+              >
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                  components={{
+                    // Override styles for specific elements
+                    a: ({node, ...props}) => (
+                      <a {...props} className="text-primary hover:text-primary/80 no-underline hover:underline" target="_blank" rel="noopener noreferrer" />
+                    ),
+                    code: ({inline, className, children, ...props}: CodeProps) => {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const language = match ? match[1] : undefined;
+                      const code = String(children).replace(/\n$/, '');
+                      
+                      if (inline) {
+                        return (
+                          <code 
+                            className={cn(
+                              "bg-muted px-1.5 py-0.5 rounded-sm font-mono text-sm",
+                              className
+                            )} 
+                            {...props}
+                          >
+                            {code}
+                          </code>
+                        );
+                      }
+
+                      const highlighted = highlightCode(code, language);
+                      
+                      return (
+                        <div className="relative group">
+                          <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(code);
+                              }}
+                              className="p-1.5 rounded bg-muted/50 hover:bg-muted text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                          {language && (
+                            <div className="absolute right-2 top-2 text-xs text-muted-foreground font-mono opacity-50">
+                              {language}
+                            </div>
+                          )}
+                          <pre className="relative bg-muted p-4 rounded-lg overflow-x-auto">
+                            <code
+                              className={cn("block font-mono text-sm", className)}
+                              dangerouslySetInnerHTML={{ __html: highlighted }}
+                            />
+                          </pre>
+                        </div>
+                      );
+                    },
+                    img: ({node, ...props}) => (
+                      <img {...props} className="rounded-lg max-h-64 object-contain" />
+                    ),
+                    blockquote: ({node, ...props}) => (
+                      <blockquote {...props} className="border-l-4 border-muted pl-4 italic" />
+                    ),
+                    table: ({node, ...props}) => (
+                      <div className="overflow-x-auto">
+                        <table {...props} className="border-collapse table-auto w-full text-sm" />
+                      </div>
+                    ),
+                    th: ({node, ...props}) => (
+                      <th {...props} className="border border-muted px-4 py-2 text-left font-medium" />
+                    ),
+                    td: ({node, ...props}) => (
+                      <td {...props} className="border border-muted px-4 py-2" />
+                    )
+                  }}
+                >
+                  {content || 'Double click to edit'}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {(node.node_type === 'image' || node.node_type === 'video' || node.node_type === 'pdf') && (
+          <FilePreview node={node} />
+        )}
       </div>
 
       {/* Resize handle */}
-      <ResizeHandle onResizeStart={handleResizeStart} />
+      <div
+        className="absolute bottom-0 right-0 w-8 h-8 cursor-se-resize hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-tl transition-colors"
+        onMouseDown={handleResizeStart}
+        onTouchStart={handleTouchResizeStart}
+        onTouchMove={handleTouchResize}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          background: 'linear-gradient(135deg, transparent 50%, rgba(209, 213, 219, 0.5) 50%)',
+        }}
+      />
     </div>
   );
 };
 
-export { CanvasNode, NodeHeader, NodeContent, ResizeHandle };
+export { CanvasNode };
