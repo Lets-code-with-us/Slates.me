@@ -21,13 +21,6 @@ const InfiniteCanvas = () => {
       description: "This canvas and all its files will be automatically deleted after 3 days."
     });
     
-    // Show keyboard shortcuts toast
-    toast({
-      title: "Keyboard Shortcuts",
-      description: "Press Ctrl+L to create links between nodes. Press Escape to cancel.",
-      duration: 5000
-    });
-    
     return () => {
       if (originalContent) {
         metaViewport?.setAttribute('content', originalContent);

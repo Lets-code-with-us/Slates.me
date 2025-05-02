@@ -1,4 +1,3 @@
-
 import { Node } from "@/types";
 import { CanvasNode } from "./CanvasNode";
 import { supabase } from "@/integrations/supabase/client";

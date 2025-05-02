@@ -5,7 +5,6 @@ import { NodeList } from "./NodeList";
 import { CanvasControls } from "./CanvasControls";
 import { Minimap } from "./Minimap";
 import { NodeFinder } from "./NodeFinder";
-import { LinkManager } from "./LinkManager";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { NodeData } from "@/types";
@@ -544,28 +543,6 @@ export const InfiniteCanvas = () => {
             viewportBounds={viewportBounds} 
             onNavigate={handleNavigateToPosition} 
           />
-        )}
-        
-        {/* Add LinkManager above the nodes */}
-        {canvas?.id && (
-          <div
-            style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-              transformOrigin: "0 0",
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              zIndex: 15
-            }}
-          >
-            <LinkManager 
-              nodes={nodes} 
-              canvasId={canvas.id} 
-              scale={scale} 
-            />
-          </div>
         )}
         
         <div
