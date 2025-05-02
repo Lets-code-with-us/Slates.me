@@ -1,3 +1,4 @@
+
 import { ArrowLeft, Plus, File, FileText, Moon, Sun, ZoomIn, ZoomOut, Upload, ChevronsUp, Home, Loader2, Trash2, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
@@ -46,7 +47,7 @@ export const CanvasControls = ({
           const timestamp = new Date().getTime();
           const uniqueFileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
           const filePath = `${code}/${uniqueFileName}`;
-          const MAX_SIZE = 10 * 1024 * 1024;
+          const MAX_SIZE = 100 * 1024 * 1024; // Increased from 10MB to 100MB
           if (file.size > MAX_SIZE) {
             continue;
           }
@@ -71,7 +72,7 @@ export const CanvasControls = ({
             file_type: file.type,
             position,
             dimensions,
-            keep_minimap_hidden: true // Add this flag to prevent minimap from showing
+            keep_minimap_hidden: true
           };
           onAddNode(node);
         } catch {}

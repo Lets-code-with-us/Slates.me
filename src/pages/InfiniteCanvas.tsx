@@ -15,6 +15,12 @@ const InfiniteCanvas = () => {
     
     metaViewport?.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
     
+    // Show toast warning about the 3-day deletion policy
+    toast({
+      title: "Temporary Canvas",
+      description: "This canvas and all its files will be automatically deleted after 3 days."
+    });
+    
     return () => {
       if (originalContent) {
         metaViewport?.setAttribute('content', originalContent);
