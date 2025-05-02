@@ -1,3 +1,4 @@
+
 import { useCallback, useRef, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useCanvas } from "@/hooks/useCanvas";
@@ -5,6 +6,9 @@ import { NodeList } from "./NodeList";
 import { CanvasControls } from "./CanvasControls";
 import { Minimap } from "./Minimap";
 import { NodeFinder } from "./NodeFinder";
+import { TextEditor } from "./TextEditor"; 
+import { Node } from "@/types";
+import { useTextEditor } from "@/hooks/useTextEditor"; 
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { NodeData } from "@/types";
@@ -24,6 +28,35 @@ export const InfiniteCanvas = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [viewportBounds, setViewportBounds] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [loadingState] = useState<'initializing' | 'loading-canvas' | 'loading-nodes' | 'ready' | 'error'>('ready');
+
+  // Initialize the text editor hook
+  const textEditor = useTextEditor(canvas?.id || '', (newNode) => {
+    if (newNode && containerRef.current) {
+      // Navigate to the newly created node (handled by useTextEditor)
+      handleNavigateToNode(newNode.id);
+    }
+  });
+
+  // Handle canvas click for creating new text nodes
+  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+    // Only handle clicks directly on the canvas element, not on nodes or controls
+    if (e.target !== e.currentTarget) return;
+    
+    if (canvas?.id) {
+      // Calculate the world position based on the click coordinates
+      const worldX = (e.clientX - position.x) / scale;
+      const worldY = (e.clientY - position.y) / scale;
+      
+      textEditor.startNewTextNode({ x: worldX, y: worldY });
+    }
+  }, [canvas?.id, position, scale, textEditor]);
+  
+  // Handle double-click on existing text node
+  const handleNodeDoubleClick = useCallback((node: Node) => {
+    if (node.node_type === 'text') {
+      textEditor.editExistingNode(node);
+    }
+  }, [textEditor]);
 
   // Improved debounce implementation with two tiers:
   // - Fast updates for smooth UI feedback
@@ -510,6 +543,7 @@ export const InfiniteCanvas = () => {
           WebkitOverflowScrolling: "touch",
           willChange: isDragging ? "transform" : "auto"
         }}
+        onClick={handleCanvasClick}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -556,8 +590,36 @@ export const InfiniteCanvas = () => {
             nodes={nodes} 
             scale={scale} 
             viewportBounds={viewportBounds} 
+            onNodeDoubleClick={handleNodeDoubleClick}
           />
         </div>
+
+        {/* Text editor overlay */}
+        {textEditor.isEditing && (
+          <div className="absolute inset-0 pointer-events-none z-50">
+            <div className="relative w-full h-full" style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: "0 0" }}>
+              <div className="pointer-events-auto">
+                <TextEditor
+                  node={textEditor.editingNode || {
+                    id: 'new',
+                    canvas_id: canvas?.id || '',
+                    node_type: 'text',
+                    position: textEditor.editorPosition,
+                    dimensions: textEditor.editorDimensions,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                  }}
+                  scale={scale}
+                  position={textEditor.editorPosition}
+                  dimensions={textEditor.editorDimensions}
+                  initialContent={textEditor.editingNode?.content || ''}
+                  onSubmit={textEditor.handleSubmit}
+                  onCancel={textEditor.handleCancel}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
