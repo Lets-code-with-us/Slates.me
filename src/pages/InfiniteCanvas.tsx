@@ -33,7 +33,7 @@ const InfiniteCanvas = () => {
     return <div className="p-8 text-center">No canvas code provided</div>;
   }
 
-  return <Canvas />;
+  return <Canvas code={code} />;
 };
 
 export default InfiniteCanvas;

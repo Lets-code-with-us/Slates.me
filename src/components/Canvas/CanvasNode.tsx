@@ -1,977 +1,264 @@
-import React, { useCallback, useRef, useState, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Node } from "@/types";
-import { cn } from "@/lib/utils";
-import { FilePreview } from "./FilePreview";
-import { supabase } from "@/integrations/supabase/client";
-import { Trash2, Move, Maximize2, ChevronsUpDown, Download, Bold, Italic, Underline } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
-import rehypeSanitize from 'rehype-sanitize';
-import { highlightCode } from '@/lib/syntax-highlighter';
-import 'highlight.js/styles/github-dark.css';
-import { Components } from 'react-markdown';
+import { Resizable } from 're-resizable';
+import { safeParsePosition, safeParseDimensions } from './NodeList';
+import { useDrag } from 'react-use-gesture';
+import { useDebounce } from 'usehooks-ts';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-// Type definitions for position and dimensions
+// Type definitions for node position and dimensions
 type Position = { x: number; y: number };
 type Dimensions = { width: number; height: number };
-
-// Add type for code block props
-type CodeProps = React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-  inline?: boolean;
-};
-
-/**
- * Safely parse position object from potential string
- */
-const safeParsePosition = (position: Position | string): Position => {
-  if (typeof position === 'string') {
-    try {
-      const parsed = JSON.parse(position);
-      if (parsed && typeof parsed === 'object' && 'x' in parsed && 'y' in parsed) {
-        return { 
-          x: Number(parsed.x), 
-          y: Number(parsed.y) 
-        };
-      }
-    } catch (e) {
-      console.error('Error parsing position:', e);
-    }
-    return { x: 0, y: 0 };
-  }
-  return position;
-};
-
-/**
- * Safely parse dimensions object from potential string
- */
-const safeParseDimensions = (dimensions: Dimensions | string): Dimensions => {
-  if (typeof dimensions === 'string') {
-    try {
-      const parsed = JSON.parse(dimensions);
-      if (parsed && typeof parsed === 'object' && 'width' in parsed && 'height' in parsed) {
-        return { 
-          width: Number(parsed.width), 
-          height: Number(parsed.height) 
-        };
-      }
-    } catch (e) {
-      console.error('Error parsing dimensions:', e);
-    }
-    // Return minimal defaults if parsing fails
-    return { width: 50, height: 50 };
-  }
-  return dimensions;
-};
-
-interface NodeHeaderProps {
-  nodeId: string;
-  filePath?: string;
-  fileName?: string;
-  nodeType: 'text' | 'image' | 'video' | 'pdf';
-  isMaximized: boolean;
-  isSaving?: boolean;
-  onToggleMaximize: () => void;
-  onDelete: () => void;
-  onDownload: (e: React.MouseEvent) => void;
-  onFormatText?: (format: 'bold' | 'italic' | 'underline') => void;
-  headerStyle: {
-    height: number;
-    fontSize: number;
-    iconSize: number;
-  };
-}
-
-const NodeHeader: React.FC<NodeHeaderProps> = ({
-  nodeId,
-  filePath,
-  fileName,
-  nodeType,
-  isMaximized,
-  isSaving,
-  onToggleMaximize,
-  onDelete,
-  onDownload,
-  onFormatText,
-  headerStyle
-}) => {
-  return (
-    <TooltipProvider delayDuration={300}>
-      <div 
-        className="absolute top-0 left-0 right-0 bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600 flex items-center px-3 transition-all duration-200"
-        style={{ 
-          height: `${headerStyle.height}px`,
-          minHeight: '32px'
-        }}
-      >
-        <Move 
-          className="text-gray-500 dark:text-gray-400 mr-3 flex-shrink-0" 
-          style={{ 
-            width: `${headerStyle.iconSize}px`,
-            height: `${headerStyle.iconSize}px`
-          }}
-        />
-        <div 
-          className="text-gray-600 dark:text-gray-300 truncate flex-1 select-none font-medium"
-          style={{ fontSize: `${headerStyle.fontSize}px` }}
-        >
-          {fileName || nodeType}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {nodeType === 'text' && onFormatText && (
-            <>
-              {isSaving && (
-                <div className="text-xs text-muted-foreground animate-pulse">
-                  Saving...
-                </div>
-              )}
-              <div className="flex items-center gap-1 mr-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => onFormatText('bold')}
-                      className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                      style={{ 
-                        width: `${headerStyle.iconSize + 12}px`,
-                        height: `${headerStyle.iconSize + 12}px`
-                      }}
-                    >
-                      <Bold 
-                        style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                        className="text-gray-500 dark:text-gray-400" 
-                      />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Bold selected text</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => onFormatText('italic')}
-                      className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                      style={{ 
-                        width: `${headerStyle.iconSize + 12}px`,
-                        height: `${headerStyle.iconSize + 12}px`
-                      }}
-                    >
-                      <Italic 
-                        style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                        className="text-gray-500 dark:text-gray-400" 
-                      />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Italicize selected text</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => onFormatText('underline')}
-                      className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                      style={{ 
-                        width: `${headerStyle.iconSize + 12}px`,
-                        height: `${headerStyle.iconSize + 12}px`
-                      }}
-                    >
-                      <Underline 
-                        style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                        className="text-gray-500 dark:text-gray-400" 
-                      />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Underline selected text</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </>
-          )}
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onToggleMaximize}
-                className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                style={{ 
-                  width: `${headerStyle.iconSize + 12}px`,
-                  height: `${headerStyle.iconSize + 12}px`
-                }}
-              >
-                {isMaximized ? 
-                  <ChevronsUpDown style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }} className="text-gray-500 dark:text-gray-400" /> : 
-                  <Maximize2 style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }} className="text-gray-500 dark:text-gray-400" />
-                }
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>{isMaximized ? "Restore" : "Maximize"}</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onDownload}
-                className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
-                style={{ 
-                  width: `${headerStyle.iconSize + 12}px`,
-                  height: `${headerStyle.iconSize + 12}px`
-                }}
-              >
-                <Download 
-                  style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                  className="text-gray-500 dark:text-gray-400" 
-                />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Download</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onDelete}
-                className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center justify-center"
-                style={{ 
-                  width: `${headerStyle.iconSize + 12}px`,
-                  height: `${headerStyle.iconSize + 12}px`
-                }}
-              >
-                <Trash2 
-                  style={{ width: `${headerStyle.iconSize}px`, height: `${headerStyle.iconSize}px` }}
-                  className="text-red-500 dark:text-red-400" 
-                />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Delete</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
-    </TooltipProvider>
-  );
-};
-
-interface NodeContentProps {
-  node: Node;
-  content: string;
-  isEditing: boolean;
-  textStyle: {
-    bold: boolean;
-    italic: boolean;
-    underline: boolean;
-  };
-  contentStyle: Record<string, any>;
-  onDoubleClick: (e: React.MouseEvent) => void;
-}
-
-const NodeContent: React.FC<NodeContentProps> = ({
-  node,
-  content,
-  isEditing,
-  textStyle,
-  contentStyle,
-  onDoubleClick
-}) => {
-  if (node.node_type === 'text') {
-    return (
-      <div 
-        className="w-full h-full overflow-auto prose dark:prose-invert max-w-none prose-sm"
-        style={{
-          fontWeight: textStyle.bold ? 'bold' : 'normal',
-          fontStyle: textStyle.italic ? 'italic' : 'normal',
-          textDecoration: textStyle.underline ? 'underline' : 'none'
-        }}
-        onDoubleClick={onDoubleClick}
-      >
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={[rehypeRaw, rehypeSanitize]}
-          components={{
-            // Override styles for specific elements
-            a: ({node, ...props}) => (
-              <a {...props} className="text-primary hover:text-primary/80 no-underline hover:underline" target="_blank" rel="noopener noreferrer" />
-            ),
-            code: ({inline, className, children, ...props}: CodeProps) => {
-              const match = /language-(\w+)/.exec(className || '');
-              const language = match ? match[1] : undefined;
-              const code = String(children).replace(/\n$/, '');
-              
-              if (inline) {
-                return (
-                  <code 
-                    className={cn(
-                      "bg-muted px-1.5 py-0.5 rounded-sm font-mono text-sm",
-                      className
-                    )} 
-                    {...props}
-                  >
-                    {code}
-                  </code>
-                );
-              }
-
-              const highlighted = highlightCode(code, language);
-              
-              return (
-                <div className="relative group">
-                  <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(code);
-                      }}
-                      className="p-1.5 rounded bg-muted/50 hover:bg-muted text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  {language && (
-                    <div className="absolute right-2 top-2 text-xs text-muted-foreground font-mono opacity-50">
-                      {language}
-                    </div>
-                  )}
-                  <pre className="relative bg-muted p-4 rounded-lg overflow-x-auto">
-                    <code
-                      className={cn("block font-mono text-sm", className)}
-                      dangerouslySetInnerHTML={{ __html: highlighted }}
-                    />
-                  </pre>
-                </div>
-              );
-            },
-            img: ({node, ...props}) => (
-              <img {...props} className="rounded-lg max-h-64 object-contain" />
-            ),
-            blockquote: ({node, ...props}) => (
-              <blockquote {...props} className="border-l-4 border-muted pl-4 italic" />
-            ),
-            table: ({node, ...props}) => (
-              <div className="overflow-x-auto">
-                <table {...props} className="border-collapse table-auto w-full text-sm" />
-              </div>
-            ),
-            th: ({node, ...props}) => (
-              <th {...props} className="border border-muted px-4 py-2 text-left font-medium" />
-            ),
-            td: ({node, ...props}) => (
-              <td {...props} className="border border-muted px-4 py-2" />
-            )
-          }}
-        >
-          {content || 'Double click to edit'}
-        </ReactMarkdown>
-      </div>
-    );
-  } else {
-    return <FilePreview node={node} />;
-  }
-};
-
-interface ResizeHandleProps {
-  onResizeStart: (e: React.MouseEvent | React.TouchEvent) => void;
-}
-
-const ResizeHandle: React.FC<ResizeHandleProps> = ({ onResizeStart }) => {
-  return (
-    <div
-      className="absolute bottom-0 right-0 w-8 h-8 cursor-se-resize hover:bg-gray-200/50 dark:hover:bg-gray-700/50 rounded-tl transition-colors"
-      onMouseDown={(e) => {
-        if (e.button === 0) onResizeStart(e);
-      }}
-      onTouchStart={onResizeStart}
-      style={{
-        background: 'linear-gradient(135deg, transparent 50%, rgba(209, 213, 219, 0.5) 50%)',
-      }}
-    />
-  );
-};
 
 interface CanvasNodeProps {
   node: Node;
   scale: number;
-  onUpdate: (nodeId: string, position: Position, dimensions?: Dimensions) => void;
+  onUpdate: (nodeId: string, position: Position, dimensions?: Dimensions) => Promise<void>;
   onDoubleClick?: (node: Node) => void;
 }
 
-const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, onDoubleClick }) => {
+export const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate, onDoubleClick }) => {
+  const [position, setPosition] = useState<Position>(safeParsePosition(node.position));
+  const [dimensions, setDimensions] = useState<Dimensions>(safeParseDimensions(node.dimensions));
+  const [isEditing, setIsEditing] = useState(false);
+  const [zIndex, setZIndex] = useState(1);
   const nodeRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [resizeStart, setResizeStart] = useState({ width: 0, height: 0, x: 0, y: 0, content: '' });
-  const position = safeParsePosition(node.position);
-  const dimensions = safeParseDimensions(node.dimensions);
-  const [currentPosition, setCurrentPosition] = useState(position);
-  const [currentDimensions, setCurrentDimensions] = useState(dimensions);
-  const [isEditing, setIsEditing] = useState(false);
-  const [content, setContent] = useState(node.content || '');
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [beforeMaximizeDimensions, setBeforeMaximizeDimensions] = useState<Dimensions | null>(null);
-  const contentUpdateTimeoutRef = useRef<NodeJS.Timeout>();
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSavedContent, setLastSavedContent] = useState(node.content || '');
-  const lastSaveTimeRef = useRef<number>(0);
-  const [textStyle, setTextStyle] = useState<{
-    bold: boolean;
-    italic: boolean;
-    underline: boolean;
-  }>({
-    bold: false,
-    italic: false,
-    underline: false
-  });
+  const [showDeleteButton, setShowDeleteButton] = useState(false);
+  const [debouncedPosition] = useDebounce(position, 300);
+  const [debouncedDimensions] = useDebounce(dimensions, 300);
 
-  // Update last active node when editing starts
-  useEffect(() => {
-    if (isEditing && node.node_type === 'text') {
-      localStorage.setItem(`last-text-node-${node.canvas_id}`, node.id);
-    }
-  }, [isEditing, node]);
-
-  // Enhanced auto-save with visual feedback
-  const updateContent = useCallback((newContent: string) => {
-    setContent(newContent);
-    
-    // Clear any pending update
-    if (contentUpdateTimeoutRef.current) {
-      clearTimeout(contentUpdateTimeoutRef.current);
-    }
-    
-    // Only show saving indicator if content actually changed
-    if (newContent !== lastSavedContent) {
-      setIsSaving(true);
-    }
-    
-    // Set new timeout for update
-    contentUpdateTimeoutRef.current = setTimeout(async () => {
-      try {
-        const now = Date.now();
-        // Only save if content changed and enough time passed since last save
-        if (newContent !== lastSavedContent && now - lastSaveTimeRef.current > 1000) {
-          const { error } = await supabase
-            .from('nodes')
-            .update({ 
-              content: newContent,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', node.id);
-
-          if (error) throw error;
-          setLastSavedContent(newContent);
-          lastSaveTimeRef.current = now;
-        }
-      } catch (error) {
-        import('@/lib/error-handler').then(({ handleError }) => {
-          handleError(error, {
-            title: "Content Update Failed",
-            message: "Unable to save text content changes"
-          });
-        });
-      } finally {
-        setIsSaving(false);
-      }
-    }, 750); // Increased debounce time for better performance
-  }, [node.id, lastSavedContent]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (contentUpdateTimeoutRef.current) {
-        clearTimeout(contentUpdateTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Keep content in sync with node
-  useEffect(() => {
-    if (node.content !== content && !isEditing) {
-      setContent(node.content || '');
-    }
-  }, [node.content, isEditing]);
-
-  const applyFormatting = (style: 'bold' | 'italic' | 'underline') => {
-    const formatText = (text: string) => {
-      switch (style) {
-        case 'bold':
-          return `**${text}**`;
-        case 'italic':
-          return `_${text}_`;
-        case 'underline':
-          return `<u>${text}</u>`;
-      }
-    };
-
-    // If not editing, just wrap the entire content
-    if (!isEditing) {
-      if (!content.trim()) return; // Don't format empty content
-      const newContent = formatText(content);
-      updateContent(newContent);
-      return;
-    }
+  // Node style based on type
+  const nodeStyle = {
+    'text': {
+      minWidth: '100px',
+      minHeight: '50px',
+      padding: '0.5rem',
+      backgroundColor: 'white',
+      border: '1px solid #ddd',
+      borderRadius: '0.25rem',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+      fontFamily: 'sans-serif',
+      fontSize: '1rem',
+      lineHeight: '1.4',
+      wordWrap: 'break-word',
+      overflow: 'hidden',
+      whiteSpace: 'pre-wrap',
+    },
+    'image': {
+      maxWidth: '300px',
+      maxHeight: '200px',
+      border: '1px solid #ddd',
+      borderRadius: '0.25rem',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+    },
+    'video': {
+      maxWidth: '300px',
+      maxHeight: '200px',
+      border: '1px solid #ddd',
+      borderRadius: '0.25rem',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+    },
+    'pdf': {
+      width: '200px',
+      height: '250px',
+      border: '1px solid #ddd',
+      borderRadius: '0.25rem',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      fontSize: '1.2rem',
+      fontWeight: 'bold',
+      color: '#555',
+    },
   };
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Don't handle mouse down for text areas or when editing
-    if (isEditing || (e.target as HTMLElement).closest('textarea')) {
-      return;
-    }
-
-    if (e.button === 0 && !(e.target as HTMLElement).closest('button')) {
-      e.stopPropagation();
-      document.body.style.userSelect = 'none';
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX / scale - position.x,
-        y: e.clientY / scale - position.y
-      });
-    }
-  }, [scale, position, isEditing]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isDragging) {
-      e.stopPropagation();
-      e.preventDefault();
-      const newPosition = {
-        x: e.clientX / scale - dragStart.x,
-        y: e.clientY / scale - dragStart.y
-      };
-      setCurrentPosition(newPosition);
-    }
-  }, [isDragging, dragStart, scale]);
-
-  const handleMouseUp = useCallback(() => {
-    // Handle resize end
-    if (isResizing) {
-      document.body.style.userSelect = '';
-      // Ensure content is preserved after resize
-      setContent(resizeStart.content || content);
-      onUpdate(node.id, currentPosition, currentDimensions);
-      setIsResizing(false);
-    }
-    
-    // Handle drag end
-    if (isDragging) {
-      document.body.style.userSelect = '';
-      onUpdate(node.id, currentPosition);
-      setIsDragging(false);
-    }
-  }, [isDragging, isResizing, currentPosition, currentDimensions, node.id, onUpdate, resizeStart.content, content]);
-
-  const handleMouseLeave = useCallback(() => {
-    // Don't end drag/resize on leave - only on mouse up
-    if (isResizing || isDragging) {
-      document.addEventListener('mouseup', handleMouseUp, { once: true });
-    }
-  }, [isResizing, isDragging, handleMouseUp]);
-
-  const handleResizeMove = useCallback((clientX: number, clientY: number) => {
-    const sensitivityFactor = 0.8;
-    const deltaX = ((clientX - resizeStart.x) / scale) * sensitivityFactor;
-    const deltaY = ((clientY - resizeStart.y) / scale) * sensitivityFactor;
-    
-    const minWidth = node.node_type === 'text' ? 150 : 100;
-    const minHeight = node.node_type === 'text' ? 100 : 100;
-    
-    const newDimensions = {
-      width: Math.max(resizeStart.width + deltaX, minWidth),
-      height: Math.max(resizeStart.height + deltaY, minHeight)
-    };
-    
-    setCurrentDimensions(newDimensions);
-    return newDimensions;
-  }, [resizeStart, scale, node.node_type]);
-
-  const handleResizeEnd = useCallback((finalDimensions: Dimensions) => {
-    document.body.style.userSelect = '';
-    setIsResizing(false);
-    setContent(resizeStart.content || content);
-    onUpdate(node.id, currentPosition, finalDimensions);
-  }, [node.id, currentPosition, resizeStart.content, content, onUpdate]);
-
-  const handleResizeStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    document.body.style.userSelect = 'none';
-    setIsResizing(true);
-    
-    const clientX = 'touches' in e 
-      ? e.touches[0].clientX 
-      : (e as React.MouseEvent).clientX;
-      
-    const clientY = 'touches' in e 
-      ? e.touches[0].clientY 
-      : (e as React.MouseEvent).clientY;
-    
-    setResizeStart({
-      width: currentDimensions.width,
-      height: currentDimensions.height,
-      x: clientX,
-      y: clientY,
-      content: content
-    });
-
-    const handleMouseMove = (e: MouseEvent) => {
-      e.preventDefault();
-      handleResizeMove(e.clientX, e.clientY);
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-      if (e.touches.length > 0) {
-        handleResizeMove(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    };
-
-    const handlePointerUp = (e: MouseEvent | TouchEvent) => {
-      e.preventDefault();
-      
-      const clientX = 'touches' in e && e.touches.length > 0
-        ? e.touches[0].clientX 
-        : (e as MouseEvent).clientX;
-        
-      const clientY = 'touches' in e && e.touches.length > 0
-        ? e.touches[0].clientY 
-        : (e as MouseEvent).clientY;
-      
-      const finalDimensions = handleResizeMove(clientX, clientY);
-      handleResizeEnd(finalDimensions);
-      
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('touchmove', handleTouchMove, { passive: false });
-      document.removeEventListener('mouseup', handlePointerUp);
-      document.removeEventListener('touchend', handlePointerUp);
-    };
-
-    if ('touches' in e) {
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handlePointerUp);
-    } else {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handlePointerUp);
-    }
-  }, [currentDimensions, content, handleResizeMove, handleResizeEnd]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 1 && !(e.target as HTMLElement).closest('button') && !(e.target as HTMLElement).closest('textarea')) {
-      e.stopPropagation();
-      
-      const touch = e.touches[0];
-      document.body.style.userSelect = 'none';
-      setIsDragging(true);
-      setDragStart({
-        x: touch.clientX / scale - position.x,
-        y: touch.clientY / scale - position.y
-      });
-    }
-  }, [scale, position]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (isDragging && e.touches.length === 1) {
-      e.stopPropagation();
-      e.preventDefault();
-      const touch = e.touches[0];
-      const newPosition = {
-        x: touch.clientX / scale - dragStart.x,
-        y: touch.clientY / scale - dragStart.y
-      };
-      setCurrentPosition(newPosition);
-    }
-  }, [isDragging, dragStart, scale]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (isResizing) {
-      const finalDimensions = currentDimensions;
-      handleResizeEnd(finalDimensions);
-    } else if (isDragging) {
-      document.body.style.userSelect = '';
-      onUpdate(node.id, currentPosition);
-      setIsDragging(false);
-    }
-  }, [isResizing, isDragging, currentDimensions, currentPosition, node.id, handleResizeEnd, onUpdate]);
-
-  const handleNodeDoubleClick = useCallback((e: React.MouseEvent) => {
-    if (node.node_type === 'text' && !(e.target as HTMLElement).closest('.node-controls')) {
-      e.stopPropagation();
-      
-      if (onDoubleClick) {
-        // Use the new text editor API provided by parent component
-        onDoubleClick(node);
-      }
-    }
-  }, [node, onDoubleClick]);
-
-  const handleDelete = async () => {
-    try {
+  // Load file from Supabase storage
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const fetchFile = async () => {
       if (node.file_path) {
-        const { error: storageError } = await supabase.storage
-          .from('slate_files')
-          .remove([node.file_path]);
+        try {
+          const { data, error } = await supabase.storage
+            .from('canvas-files')
+            .getPublicUrl(node.file_path);
 
-        if (storageError) throw storageError;
+          if (error) {
+            throw error;
+          }
+
+          setFileUrl(data.publicUrl);
+        } catch (error) {
+          import('@/lib/error-handler').then(({ handleError }) => {
+            handleError(error, {
+              title: "File Load Failed",
+              message: "Unable to load file from storage"
+            });
+          });
+        }
       }
+    };
 
-      const { error: dbError } = await supabase
+    fetchFile();
+  }, [node.file_path]);
+
+  // Delete node from database
+  const handleDeleteNode = async () => {
+    try {
+      const { error } = await supabase
         .from('nodes')
         .delete()
         .eq('id', node.id);
 
-      if (dbError) throw dbError;
+      if (error) {
+        throw error;
+      }
     } catch (error) {
-      // Use standardized error handler
       import('@/lib/error-handler').then(({ handleError }) => {
         handleError(error, {
-          title: "Delete Failed",
-          message: "Unable to delete the node"
+          title: "Node Delete Failed",
+          message: "Unable to delete node"
         });
       });
     }
   };
 
-  const handleDownload = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
+  // Drag gesture handler
+  const bind = useDrag(({ offset: [x, y], down, event }) => {
+    if (isResizing) return;
 
-    try {
-      if (node.node_type === 'text') {
-        // For text nodes, create a text file with the content
-        const blob = new Blob([content || ''], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `text-note-${node.id.slice(0, 8)}.txt`;
-        a.setAttribute('download', `text-note-${node.id.slice(0, 8)}.txt`);
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 100);
-        
-        // Only show notifications for errors, not for successful downloads
-      } else if (node.file_path) {
-        // For file nodes, need to fetch the file first to ensure it downloads properly
-        // No notification needed for starting download
-        
-        // Get the public URL from Supabase
-        const { data } = supabase.storage.from('slate_files').getPublicUrl(node.file_path);
-        if (!data.publicUrl) throw new Error('Could not generate download URL');
-        
-        // Fetch the file as a blob to force download
-        const response = await fetch(data.publicUrl);
-        if (!response.ok) throw new Error('Failed to fetch file from storage');
-        
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        
-        // Create download link and trigger it
-        const filename = node.file_name || `file-${node.id.slice(0, 8)}`;
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = filename;
-        a.setAttribute('download', filename); // Enforce download attribute
-        document.body.appendChild(a);
-        a.click();
-        
-        // Clean up
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(blobUrl);
-        }, 100);
-        
-        // No notification for successful download - browser shows its own UI
-      }
-    } catch (error) {
-      // Only show notifications for errors
-      import('@/lib/error-handler').then(({ handleError }) => {
-        handleError(error, {
-          title: "Download Failed",
-          message: "Unable to download the file to your device. Please try again."
-        });
-      });
-    }
-  };
+    // Prevent dragging when interacting with form elements
+    if ((event?.target as HTMLElement)?.tagName?.match(/INPUT|TEXTAREA|SELECT/)) return;
 
-  const handleToggleMaximize = useCallback(() => {
-    if (isMaximized) {
-      // Restore previous dimensions
-      if (beforeMaximizeDimensions) {
-        setCurrentDimensions(beforeMaximizeDimensions);
-        onUpdate(node.id, currentPosition, beforeMaximizeDimensions);
-        setBeforeMaximizeDimensions(null);
-      }
+    setIsDragging(down);
+    if (down) {
+      setZIndex(100);
     } else {
-      // Save current dimensions and maximize
-      setBeforeMaximizeDimensions(currentDimensions);
-      // Set to a larger size - can be adjusted based on node type or screen size
-      const newDimensions = { width: 600, height: 400 };
-      setCurrentDimensions(newDimensions);
-      onUpdate(node.id, currentPosition, newDimensions);
+      setZIndex(1);
     }
-    setIsMaximized(!isMaximized);
-  }, [isMaximized, beforeMaximizeDimensions, currentDimensions, currentPosition, node.id, onUpdate]);
 
-  // Calculate border color based on node type
-  const calculateBorderColor = useCallback(() => {
-    const opacity = isDragging ? '40' : '60';
-    switch (node.node_type) {
-      case 'text':
-        return `rgb(59 130 246 / ${opacity}%)`; // Blue
-      case 'image':
-        return `rgb(16 185 129 / ${opacity}%)`; // Green
-      case 'video':
-        return `rgb(239 68 68 / ${opacity}%)`; // Red
-      case 'pdf':
-        return `rgb(245 158 11 / ${opacity}%)`; // Amber
-      default:
-        return `rgb(156 163 175 / ${opacity}%)`; // Gray
+    setPosition(prev => ({
+      x: prev.x + x / scale,
+      y: prev.y + y / scale,
+    }));
+  }, {
+    pointer: {
+      touch: true,
+    },
+  });
+
+  // Double click handler
+  const handleDoubleClick = useCallback(() => {
+    if (onDoubleClick) {
+      onDoubleClick(node);
     }
-  }, [node.node_type, isDragging]);
+  }, [node, onDoubleClick]);
 
-  // Calculate header sizes based on node dimensions
-  const calculateHeaderStyle = useCallback(() => {
-    // More aggressive scaling based on node size
-    const minHeight = 32;
-    const maxHeight = 56; // Increased max height
-    const baseHeight = Math.min(currentDimensions.width, currentDimensions.height) / 8; // More aggressive ratio
-    const headerHeight = Math.min(maxHeight, Math.max(minHeight, baseHeight));
-    
-    // Calculate font size with wider range
-    const minFontSize = 13;
-    const maxFontSize = 20; // Increased max font size
-    const fontSize = Math.min(maxFontSize, Math.max(minFontSize, headerHeight / 2));
-    
-    // Calculate icon sizes with wider range
-    const minIconSize = 16;
-    const maxIconSize = 24; // Increased max icon size
-    const iconSize = Math.min(maxIconSize, Math.max(minIconSize, headerHeight / 2));
-    
-    return {
-      height: headerHeight,
-      fontSize: fontSize,
-      iconSize: iconSize
-    };
-  }, [currentDimensions]);
-
-  // Calculate content text size based on node dimensions and content
-  const calculateContentStyle = useCallback(() => {
-    const minFontSize = 13;
-    const maxFontSize = 24; // Increased max font size
-    
-    // Calculate area available for text
-    const contentArea = currentDimensions.width * currentDimensions.height;
-    const contentLength = content?.length || 0;
-    
-    // Calculate optimal font size based on area and content length
-    const areaPerChar = Math.sqrt(contentArea / Math.max(contentLength, 1));
-    const dynamicFontSize = areaPerChar * 0.8; // Adjust this multiplier to fine-tune the scaling
-    
-    // Calculate font size based on node dimensions
-    const dimensionBasedSize = Math.min(
-      currentDimensions.width / 20,
-      currentDimensions.height / 10
-    );
-    
-    // Use the smaller of the two calculations to ensure text fits
-    const calculatedSize = Math.min(dynamicFontSize, dimensionBasedSize);
-    const finalFontSize = Math.min(maxFontSize, Math.max(minFontSize, calculatedSize));
-    
-    return {
-      fontSize: `${finalFontSize}px`,
-      lineHeight: '1.5',
-      transition: isDragging || isResizing ? 'none' : 'font-size 0.2s ease'
-    };
-  }, [currentDimensions, content, isDragging, isResizing]);
-
-  const headerStyle = calculateHeaderStyle();
-  const contentStyle = calculateContentStyle();
-
-  // If node attributes change externally, update local state
+  // Update position in database when debounced position changes
   useEffect(() => {
-    setCurrentPosition(safeParsePosition(node.position));
-    setCurrentDimensions(safeParseDimensions(node.dimensions));
-    setContent(node.content || '');
-  }, [node.position, node.dimensions, node.content]);
+    if (isDragging) return;
+    onUpdate(node.id, debouncedPosition, debouncedDimensions);
+  }, [node.id, debouncedPosition, debouncedDimensions, onUpdate, isDragging]);
+
+  // Handler for resize stop
+  const handleResizeStop = useCallback((_e: any, _direction: any, ref: any, d: any) => {
+    setIsResizing(false);
+    setDimensions({
+      width: ref.offsetWidth,
+      height: ref.offsetHeight,
+    });
+    setPosition(prev => ({
+      x: prev.x + d.width / scale / 2,
+      y: prev.y + d.height / scale / 2,
+    }));
+  }, [scale]);
+
+  // Handler for resize start
+  const handleResizeStart = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  // Handler for mouse enter
+  const handleMouseEnter = useCallback(() => {
+    setShowDeleteButton(true);
+  }, []);
+
+  // Handler for mouse leave
+  const handleMouseLeave = useCallback(() => {
+    setShowDeleteButton(false);
+  }, []);
 
   return (
     <div
       ref={nodeRef}
-      id={`node-${node.id}`}
-      className={cn(
-        "absolute rounded-lg overflow-hidden transition-all duration-200",
-        "bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900",
-        "shadow-lg hover:shadow-xl",
-        "before:absolute before:inset-0 before:rounded-lg before:pointer-events-none",
-        "before:transition-opacity before:duration-200",
-        "before:border-[1.5px] before:border-opacity-40 hover:before:border-opacity-60",
-        isDragging && "cursor-grabbing opacity-75",
-        !isDragging && !isEditing && "cursor-grab",
-        isResizing && "cursor-se-resize opacity-75",
-        isEditing && "ring-2 ring-primary/30 before:border-primary/60",
-      )}
+      {...bind()}
       style={{
-        transform: `translate(${currentPosition.x}px, ${currentPosition.y}px)`,
-        width: currentDimensions.width,
-        height: currentDimensions.height,
-        transition: isDragging || isResizing ? 'none' : 'all 0.2s ease-out',
-        touchAction: "none",
-        willChange: isDragging || isResizing ? "transform" : "auto",
-        '--border-color': calculateBorderColor(),
-      } as React.CSSProperties}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
+        x: 0,
+        y: 0,
+        position: 'absolute',
+        left: position.x,
+        top: position.y,
+        zIndex: isDragging ? 100 : zIndex,
+      }}
+      onDoubleClick={handleDoubleClick}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onDoubleClick={handleNodeDoubleClick}
     >
-      <NodeHeader
-        nodeId={node.id}
-        filePath={node.file_path}
-        fileName={node.file_name}
-        nodeType={node.node_type}
-        isMaximized={isMaximized}
-        isSaving={isSaving}
-        onToggleMaximize={handleToggleMaximize}
-        onDelete={handleDelete}
-        onDownload={handleDownload}
-        onFormatText={applyFormatting}
-        headerStyle={headerStyle}
-      />
-
-      {/* Content area with dynamic text size */}
-      <div 
-        className="p-2 w-full overflow-auto"
-        style={{ 
-          height: `calc(100% - ${headerStyle.height}px)`,
-          marginTop: `${headerStyle.height}px`
+      <Resizable
+        style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        size={{ width: dimensions.width, height: dimensions.height }}
+        onResizeStop={handleResizeStop}
+        onResizeStart={handleResizeStart}
+        enable={{
+          top: false,
+          right: true,
+          bottom: true,
+          left: false,
+          topRight: false,
+          bottomRight: true,
+          bottomLeft: false,
+          topLeft: false,
         }}
+        minWidth={50}
+        minHeight={50}
       >
-        <NodeContent
-          node={node}
-          content={content}
-          isEditing={isEditing}
-          textStyle={textStyle}
-          contentStyle={contentStyle}
-          onDoubleClick={handleNodeDoubleClick}
-        />
-      </div>
+        {node.node_type === 'text' && (
+          <div style={nodeStyle['text']}>
+            {node.content}
+          </div>
+        )}
 
-      {/* Resize handle */}
-      <ResizeHandle onResizeStart={handleResizeStart} />
+        {node.node_type === 'image' && fileUrl && (
+          <img src={fileUrl} alt={node.file_name || 'Canvas Image'} style={nodeStyle['image']} />
+        )}
+
+        {node.node_type === 'video' && fileUrl && (
+          <video src={fileUrl} controls style={nodeStyle['video']} />
+        )}
+
+        {node.node_type === 'pdf' && (
+          <div style={nodeStyle['pdf']}>
+            <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+              View PDF
+            </a>
+          </div>
+        )}
+
+        {showDeleteButton && (
+          <Button
+            variant="destructive"
+            size="icon"
+            onClick={handleDeleteNode}
+            className="absolute top-1 right-1 z-50"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </Resizable>
     </div>
   );
 };
-
-export { CanvasNode, NodeHeader, NodeContent, ResizeHandle };
