@@ -17,7 +17,8 @@
         "code",
         "doc",
         "design",
-        "ideas"
+        "ideas",
+        "maintenance"
       ]
     },
     {
@@ -32,7 +33,7 @@
     }
   ],
   
-  "contributorsPerLine": 7,
+  "contributorsPerLine": 6,
   "skipCi": true,
   "types": {
     "code": {
@@ -62,6 +63,10 @@
     "security": {
       "symbol": "🔒",
       "description": "Security"
+    },
+    "maintenance": {
+      "symbol": "🚧",
+      "description": "Maintenance"
     }
   }
 }

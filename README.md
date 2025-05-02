@@ -77,6 +77,26 @@ Thanks to all our contributors who help make Slate Pad better!
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="16.66%">
+        <a href="https://github.com/RavindranathTagor">
+          <img src="https://avatars.githubusercontent.com/u/87895684?v=4" width="100px;" alt="Ravindranath Tagor"/>
+          <br />
+          <sub><b>Ravindranath Tagor</b></sub>
+        </a>
+        <br />
+        <a href="#code-RavindranathTagor" title="Code">💻</a>
+        <a href="#doc-RavindranathTagor" title="Documentation">📖</a>
+        <a href="#design-RavindranathTagor" title="Design">🎨</a>
+        <a href="#ideas-RavindranathTagor" title="Ideas">🤔</a>
+        <a href="#maintenance-RavindranathTagor" title="Maintenance">🚧</a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
 <!-- ALL-CONTRIBUTORS-LIST:END -->
