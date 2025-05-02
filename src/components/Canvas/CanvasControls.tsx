@@ -214,7 +214,9 @@ export const CanvasControls = ({
               <TooltipContent side="right">
                 <div className="space-y-1">
                   <p>Upload files</p>
-                  <p className="text-xs text-muted-foreground">Files will be automatically deleted after 7 days</p>
+                  <p className="text-xs text-muted-foreground">Upload images, videos, PDFs, and more</p>
+                  
+
                 </div>
               </TooltipContent>
             </Tooltip>
