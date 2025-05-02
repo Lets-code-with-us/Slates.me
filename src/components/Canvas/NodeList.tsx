@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCallback, useEffect } from "react";
 
 // Type definitions for node position and dimensions
-export type Position = { x: number; y: number };
-export type Dimensions = { width: number; height: number };
+type Position = { x: number; y: number };
+type Dimensions = { width: number; height: number };
 type NodeUpdates = {
   position?: Position;
   dimensions?: Dimensions;
@@ -16,7 +16,7 @@ type NodeUpdates = {
 /**
  * Safely parse position object from potential string
  */
-export const safeParsePosition = (position: Position | string): Position => {
+const safeParsePosition = (position: Position | string): Position => {
   if (typeof position === 'string') {
     try {
       const parsed = JSON.parse(position);
@@ -39,7 +39,7 @@ export const safeParsePosition = (position: Position | string): Position => {
 /**
  * Safely parse dimensions object from potential string
  */
-export const safeParseDimensions = (dimensions: Dimensions | string): Dimensions => {
+const safeParseDimensions = (dimensions: Dimensions | string): Dimensions => {
   if (typeof dimensions === 'string') {
     try {
       const parsed = JSON.parse(dimensions);
