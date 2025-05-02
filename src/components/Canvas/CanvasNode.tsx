@@ -603,7 +603,7 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
       // Multi-line tab support
       if (start !== end) {
         const lines = content.split('\n');
-        let startLine = content.substring(0, start).split('\n').length - 1;
+        const startLine = content.substring(0, start).split('\n').length - 1;
         let endLine = content.substring(0, end).split('\n').length - 1;
         
         // If selection ends at start of line, don't include that line
@@ -647,7 +647,7 @@ const CanvasNode: React.FC<CanvasNodeProps> = ({ node, scale, onUpdate }) => {
       // Multi-line unindent
       if (start !== end) {
         const lines = content.split('\n');
-        let startLine = content.substring(0, start).split('\n').length - 1;
+        const startLine = content.substring(0, start).split('\n').length - 1;
         let endLine = content.substring(0, end).split('\n').length - 1;
         
         // If selection ends at start of line, don't include that line

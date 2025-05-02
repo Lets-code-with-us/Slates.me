@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,11 +26,21 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Cache build
+      uses: actions/cache@v4
+      with:
+        path: |
+          dist
+          .vite
+        key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+
     - name: Type check
       run: npm run type-check
 
     - name: Lint
-      run: npm run lint
+      run: npm run lint:strict
 
     - name: Build
       run: npm run build

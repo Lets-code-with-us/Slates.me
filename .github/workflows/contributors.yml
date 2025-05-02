@@ -4,20 +4,24 @@ on:
     - cron: '0 0 * * *'  # Runs daily at midnight
   push:
     branches:
-      - main  # or your default branch name
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   add-contributors:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BobAnkh/add-contributors@master
+      - uses: BobAnkh/add-contributors@v0.2.2
         with:
-          CONTRIBUTOR: '## Contributors'  # Section to add contributors
+          CONTRIBUTOR: '## Contributors'
           COLUMN_PER_ROW: '6'
           ACCESS_TOKEN: ${{secrets.GITHUB_TOKEN}}
           IMG_WIDTH: '100'
           FONT_SIZE: '14'
-          PATH: '/README.md'
+          PATH: 'README.md'
           COMMIT_MESSAGE: 'docs: update contributors automatically'
           AVATAR_SHAPE: 'round'
