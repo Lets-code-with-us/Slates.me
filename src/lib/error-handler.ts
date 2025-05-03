@@ -13,6 +13,15 @@ interface ErrorDetails {
 }
 
 /**
+ * Interface for Supabase storage errors
+ */
+interface StorageError {
+  statusCode?: number;
+  message?: string;
+  error?: string;
+}
+
+/**
  * Standardized error handler for application-wide consistent error handling
  * 
  * @param error The error object (any type)
@@ -46,13 +55,13 @@ export function handleError(error: unknown, customDetails?: Partial<ErrorDetails
   
   // Handle storage errors (they have a different structure)
   if (isStorageError(error)) {
-    const storageError = error as any;
+    const storageError = error as StorageError;
     details = {
       ...details,
       title: "Storage Error",
       message: "Failed to upload or access file",
       errorCode: storageError.statusCode?.toString() || "STORAGE_ERROR",
-      technical: storageError.message || JSON.stringify(storageError)
+      technical: storageError.message || storageError.error || JSON.stringify(storageError)
     };
   }
   
@@ -78,7 +87,7 @@ export function handleError(error: unknown, customDetails?: Partial<ErrorDetails
 /**
  * Type guard for PostgrestError
  */
-function isPostgrestError(error: unknown): boolean {
+function isPostgrestError(error: unknown): error is PostgrestError {
   return (
     typeof error === 'object' && 
     error !== null && 
@@ -91,11 +100,11 @@ function isPostgrestError(error: unknown): boolean {
 /**
  * Type guard for Supabase storage errors
  */
-function isStorageError(error: unknown): boolean {
+function isStorageError(error: unknown): error is StorageError {
   return (
     typeof error === 'object' && 
     error !== null && 
-    ('statusCode' in error || 'error' in error)
+    ('statusCode' in error || 'error' in error || 'message' in error)
   );
 }
 

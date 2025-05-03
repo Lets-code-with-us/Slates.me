@@ -77,7 +77,7 @@ export const springAnimate = (options: {
   let velocity = 0;
   let isAnimating = true;
   
-  const step = (timestamp: number) => {
+  const step = () => {
     if (!isAnimating) return;
     
     // Spring physics
