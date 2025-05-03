@@ -1,26 +1,56 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
 const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
-          Return to Home
-        </a>
-      </div>
-    </div>
+    <>
+      <Helmet>
+        <title>Page Not Found - Slate</title>
+        <meta name="description" content="The page you're looking for doesn't exist. Return to Slate's infinite canvas collaboration tool." />
+        <meta name="robots" content="noindex" />
+      </Helmet>
+
+      <main className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
+        <div className="text-center max-w-md">
+          <img 
+            src="/images/slate_Logo.png" 
+            alt="Slate Logo" 
+            className="h-16 mx-auto mb-8"
+            width="64"
+            height="64"
+          />
+          
+          <h1 className="text-4xl font-bold mb-4">Page Not Found</h1>
+          
+          <p className="text-lg text-muted-foreground mb-8">
+            The canvas you're looking for might have been moved or deleted. 
+            Would you like to create a new one?
+          </p>
+
+          <div className="space-y-4">
+            <Button 
+              onClick={() => navigate("/")} 
+              size="lg" 
+              className="w-full"
+            >
+              Create New Canvas
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              onClick={() => window.history.back()} 
+              size="lg" 
+              className="w-full"
+            >
+              Go Back
+            </Button>
+          </div>
+        </div>
+      </main>
+    </>
   );
 };
 

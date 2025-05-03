@@ -1,20 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Slate</title>
-  <script type="text/javascript">
-    // Single Page Apps for GitHub Pages
-    // MIT License
-    // https://github.com/rafgraph/spa-github-pages
-    // This script takes the current URL and converts the path and query
-    // string into just a query string, and then redirects the browser
-    // to the new URL with only a query string and hash fragment
-    
-    // If you're creating a Project Pages site and NOT using a custom domain,
-    // then set pathSegmentsToKeep to 1 (enterprise users may need to set it to > 1).
-    var pathSegmentsToKeep = 0;
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Page Not Found - Slate | Infinite Canvas</title>
+  <meta name="description" content="The page you're looking for cannot be found. Return to Slate's infinite canvas to continue organizing your content.">
+  
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: hsl(222.2, 84%, 4.9%);
+      color: hsl(210, 40%, 98%);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+    .container {
+      padding: 2rem;
+      max-width: 600px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    p {
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+      opacity: 0.9;
+    }
+    .logo {
+      width: 120px;
+      height: auto;
+      margin-bottom: 2rem;
+    }
+    .button {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background: hsl(217.2, 91.2%, 59.8%);
+      color: white;
+      text-decoration: none;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .button:hover {
+      opacity: 0.9;
+    }
+  </style>
 
+  <script type="text/javascript">
+    // Single Page Apps for GitHub Pages redirect script
+    var pathSegmentsToKeep = 0;
     var l = window.location;
     l.replace(
       l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
@@ -26,5 +67,11 @@
   </script>
 </head>
 <body>
+  <div class="container">
+    <img src="/images/slate_Logo.png" alt="Slate Logo" class="logo">
+    <h1>Page Not Found</h1>
+    <p>The page you're looking for cannot be found. It might have been moved, deleted, or never existed. Return to our infinite canvas to continue organizing your content.</p>
+    <a href="/" class="button">Return to Homepage</a>
+  </div>
 </body>
 </html>

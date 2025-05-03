@@ -1,0 +1,41 @@
+{
+  "name": "Slate - Infinite Canvas",
+  "short_name": "Slate",
+  "description": "Create and organize rich content nodes on an infinite canvas",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "hsl(222.2 84% 4.9%)",
+  "theme_color": "hsl(222.2 84% 4.9%)",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "New Canvas",
+      "url": "/new",
+      "description": "Create a new infinite canvas"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/images/slate_Logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/white-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/slate_Logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Slate - Infinite Canvas"
+    }
+  ]
+}

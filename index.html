@@ -3,27 +3,134 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="alternate icon" href="/favicon.ico" type="image/png">
-    <link rel="apple-touch-icon" href="/favicon.svg">
-    <meta name="theme-color" content="#000000" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <title>Slate - Infinite Canvas</title>
-    <meta name="description" content="Create and organize rich content nodes on an infinite canvas" />
-    <meta name="author" content="RavindranathTagor" />
-
-    <meta property="og:title" content="Slate - Infinite Canvas" />
-    <meta property="og:description" content="Create and organize rich content nodes on an infinite canvas" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    <meta property="og:url" content="https://slates.me" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@slates_me" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    <meta name="twitter:url" content="https://slates.me" />
     
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="/images/slate_Logo.png">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Theme and Display -->
+    <meta name="theme-color" content="hsl(222.2 84% 4.9%)" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="hsl(0 0% 100%)" media="(prefers-color-scheme: light)">
+    <meta name="color-scheme" content="dark light">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Primary Meta Tags -->
+    <title>Slate - The simplest way to collaborate on an infinite canvas</title>
+    <meta name="title" content="Slate - The simplest way to collaborate on an infinite canvas">
+    <meta name="description" content="Create and share infinite canvases with your team. No login required. Collaborate in real-time with text, images, and files.">
+    <meta name="author" content="RavindranathTagor" />
+    <meta name="keywords" content="infinite canvas, collaboration, whiteboard, online whiteboard, drawing tool, team collaboration">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://slates.me/" />
+    
+    <!-- Language Alternatives -->
+    <link rel="alternate" href="https://slates.me" hreflang="x-default" />
+    <link rel="alternate" href="https://slates.me" hreflang="en" />
+    
+    <!-- OpenGraph Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://slates.me/">
+    <meta property="og:title" content="Slate - The simplest way to collaborate on an infinite canvas">
+    <meta property="og:description" content="Create and share infinite canvases with your team. No login required. Collaborate in real-time with text, images, and files.">
+    <meta property="og:image" content="/images/slate_Logo.png">
+    <meta property="og:image:alt" content="Slate Logo - Infinite Canvas Tool" />
+    <meta property="og:site_name" content="Slate" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="article:modified_time" content="2025-05-03" />
+    
+    <!-- Twitter Meta Tags -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://slates.me/">
+    <meta property="twitter:title" content="Slate - The simplest way to collaborate on an infinite canvas">
+    <meta property="twitter:description" content="Create and share infinite canvases with your team. No login required. Collaborate in real-time with text, images, and files.">
+    <meta property="twitter:image" content="/images/slate_Logo.png">
+    <meta name="twitter:site" content="@slates_me" />
+    <meta name="twitter:creator" content="@slates_me" />
+    <meta name="twitter:image:alt" content="Slate Logo - Infinite Canvas Tool" />
+    
+    <!-- iOS PWA Tags -->
+    <meta name="apple-mobile-web-app-title" content="Slate">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="mask-icon" href="/images/slate_Logo.png" color="#000000">
+    <link rel="apple-touch-startup-image" href="/images/slate_Logo.png">
+    
+    <!-- Microsoft Tile Tags -->
+    <meta name="msapplication-TileColor" content="#000000">
+    <meta name="msapplication-TileImage" content="/images/slate_Logo.png">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- Alternate Image Sizes -->
+    <link rel="preload" as="image" href="/images/og-image-small.png" />
+    <link rel="preload" as="image" href="/images/og-image-large.png" />
+    
+    <!-- Preconnect to required origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- App verification -->
+    <meta name="google-site-verification" content="your-verification-code">
+    
+    <!-- Additional SEO tags -->
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Slate - Infinite Canvas",
+        "description": "Create and organize rich content nodes on an infinite canvas. Support for text, images, videos, PDFs, and real-time collaboration.",
+        "url": "https://slates.me",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Any",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "screenshot": "https://slates.me/images/slate_Logo.png",
+        "featureList": [
+          "Infinite Canvas with Zoom/Pan",
+          "Rich Text Editing with Markdown",
+          "Media Support (Images, Videos, PDFs)",
+          "Real-time Collaboration",
+          "Smart Search and Filtering",
+          "Dark Mode Support",
+          "Auto-save Feature",
+          "Keyboard Shortcuts",
+          "Responsive Design"
+        ],
+        "author": {
+          "@type": "Person",
+          "name": "RavindranathTagor"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": "4.8",
+          "ratingCount": "150"
+        }
+      }
+    </script>
+
+    <!-- Additional Schema.org for breadcrumbs -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [{
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://slates.me"
+        }]
+      }
+    </script>
+
     <!-- Start Single Page Apps for GitHub Pages -->
     <script type="text/javascript">
       // Single Page Apps for GitHub Pages

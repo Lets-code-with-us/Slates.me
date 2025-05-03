@@ -2,6 +2,64 @@
 
 First off, thank you for considering contributing to Slate! It's people like you that make Slate such a great tool.
 
+## Feature Highlights & Contribution Opportunities
+
+### 1. Text Node Capabilities
+Current features:
+- Rich Markdown editing with syntax highlighting
+- Real-time formatting controls (bold, italic, underline)
+- Code block support with language detection
+- Auto-save with visual feedback
+
+Looking for contributors to:
+- Implement LaTeX equation rendering
+- Add support for diagrams (Mermaid, PlantUML)
+- Create collaborative editing features
+- Enhance code editing with IntelliSense-like features
+- Add table of contents generation for long notes
+
+### 2. Media Integration
+Current features:
+- Support for images, videos, and PDFs
+- PDF viewer with zoom/pan controls
+- Progressive image loading
+- Automatic file type detection
+
+Looking for contributors to:
+- Add audio file visualization
+- Implement 3D model viewer (.glb, .obj files)
+- Create better video player controls
+- Add image editing capabilities
+- Implement file compression options
+
+### 3. Canvas Intelligence
+Current features:
+- Infinite canvas with zoom/pan
+- Smart node placement
+- Minimap navigation
+- Advanced node search with filters
+
+Looking for contributors to:
+- Implement node grouping/folders
+- Add custom canvas backgrounds
+- Create node linking/relationship features
+- Improve touch gestures and mobile experience
+- Add canvas export/import functionality
+
+### 4. Performance & Infrastructure
+Current features:
+- Efficient node virtualization
+- Progressive loading
+- Real-time updates
+- Automatic file cleanup
+
+Looking for contributors to:
+- Implement WebAssembly for heavy computations
+- Add offline support with ServiceWorker
+- Create better error recovery mechanisms
+- Improve canvas rendering performance
+- Implement better caching strategies
+
 ## Code of Conduct
 
 By participating in this project, you are expected to uphold our Code of Conduct:
