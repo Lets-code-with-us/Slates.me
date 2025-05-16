@@ -1,4 +1,4 @@
-# Contributing to Slate Pad
+# Contributing to Slate.me
 
 First off, thank you for considering contributing to Slate! It's people like you that make Slate such a great tool.
 

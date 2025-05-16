@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<browserconfig>
+  <msapplication>
+    <tile>
+      <square70x70logo src="/images/slate_Logo.png"/>
+      <square150x150logo src="/images/slate_Logo.png"/>
+      <wide310x150logo src="/images/slate_Logo.png"/>
+      <square310x310logo src="/images/slate_Logo.png"/>
+      <TileColor>#0c0d12</TileColor>
+    </tile>
+    <notification>
+      <polling-uri src="notifications/contoso-chat.xml"/>
+      <frequency>30</frequency>
+      <cycle>1</cycle>
+    </notification>
+  </msapplication>
+</browserconfig>

@@ -26,7 +26,7 @@ If applicable, add screenshots to help explain your problem.
 - OS: [e.g. Windows 11, macOS 13.0]
 - Browser: [e.g. Chrome 112, Safari 16]
 - Device: [e.g. Desktop, iPhone 14]
-- Slate.me Version: [e.g. 1.0.0]
+- Slate Pad Version: [e.g. 1.0.0]
 
 ## Additional context
 Add any other context about the problem here.
