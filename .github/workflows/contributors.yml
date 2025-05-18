@@ -25,3 +25,4 @@ jobs:
           PATH: 'README.md'
           COMMIT_MESSAGE: 'docs: update contributors automatically'
           AVATAR_SHAPE: 'round'
+          EXCLUDED_USER: 'lovable-dev[bot],github-actions[bot]'
